@@ -6,6 +6,7 @@ import {
   LogIn,
   LogOut,
   Plus,
+  RefreshCcw,
   Target,
   Users
 } from "lucide-react";
@@ -426,9 +427,9 @@ function App() {
 
   async function saveMemberProfile(userId: string, nextMember: MemberProfile) {
     if (!supabase) {
-      return;
+      return null;
     }
-    await supabase.from("member_profiles").upsert({
+    return supabase.from("member_profiles").upsert({
       user_id: userId,
       display_name: nextMember.displayName,
       avatar_url: nextMember.avatarUrl,
@@ -439,6 +440,63 @@ function App() {
       monthly_spend: nextMember.monthlySpend,
       monthly_earned: nextMember.monthlyEarned
     });
+  }
+
+  async function handleResetWorkspace() {
+    const shouldReset = window.confirm(
+      currentUser
+        ? "Reset your workspace? This will clear tasks, habits, transactions, subscriptions, balances, and XP."
+        : "Reset the local workspace view on this device?"
+    );
+
+    if (!shouldReset) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    const blankMember = currentUser ? buildBlankMember(currentUser) : buildGuestMember();
+
+    try {
+      if (currentUser && supabase) {
+        const [taskResult, habitResult, transactionResult, subscriptionResult, memberResult] =
+          await Promise.all([
+            supabase.from("tasks").delete().eq("user_id", currentUser.id),
+            supabase.from("habits").delete().eq("user_id", currentUser.id),
+            supabase.from("transactions").delete().eq("user_id", currentUser.id),
+            supabase.from("subscriptions").delete().eq("user_id", currentUser.id),
+            saveMemberProfile(currentUser.id, blankMember)
+          ]);
+
+        const resetError =
+          taskResult.error ||
+          habitResult.error ||
+          transactionResult.error ||
+          subscriptionResult.error ||
+          memberResult?.error;
+
+        if (resetError) {
+          throw resetError;
+        }
+      } else {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
+
+      setMember(blankMember);
+      setTasks([]);
+      setHabits([]);
+      setTransactions([]);
+      setSubscriptions([]);
+      setHabitBurstId(null);
+      setExportOpen(false);
+      setActiveView("command");
+      resetActionForm();
+      pushToast("Workspace reset. You are back to a fresh start.");
+    } catch {
+      pushToast("Workspace reset failed. Please try again in a moment.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   async function saveTask(userId: string, task: TaskItem) {
@@ -853,6 +911,27 @@ function App() {
                 )}
               </button>
             </div>
+
+            <div className="glass-panel rounded-[24px] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Workspace Reset</p>
+                  <p className="mt-2 text-sm text-slate-300">
+                    Clear tasks, habits, ledger entries, subscriptions, and return to a clean slate.
+                  </p>
+                </div>
+                <RefreshCcw className="mt-0.5 h-5 w-5 text-amber-200" />
+              </div>
+              <button
+                type="button"
+                onClick={handleResetWorkspace}
+                disabled={isSaving}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-medium text-amber-50 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCcw className={`h-4 w-4 ${isSaving ? "animate-spin" : ""}`} />
+                {isSaving ? "Resetting workspace..." : "Reset workspace"}
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -981,9 +1060,17 @@ function getTaskDisplayDueLabel(task: TaskItem) {
 }
 
 function buildBlankMember(user: User): MemberProfile {
+  return buildPristineMember(getDisplayName(user), getAvatarUrl(user));
+}
+
+function buildGuestMember(): MemberProfile {
+  return buildPristineMember("Life OS User", null);
+}
+
+function buildPristineMember(displayName: string, avatarUrl: string | null): MemberProfile {
   return {
-    displayName: getDisplayName(user),
-    avatarUrl: getAvatarUrl(user),
+    displayName,
+    avatarUrl,
     level: 1,
     xp: 0,
     xpGoal: 100,
