@@ -4,9 +4,9 @@
 
 :root {
   color-scheme: dark;
-  font-family: "Avenir Next", "Segoe UI Variable Display", sans-serif;
-  background-color: #050816;
-  color: #e2e8f0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  background-color: #0d141d;
+  color: #dce3f0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,24 +26,19 @@ body,
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(110, 231, 255, 0.16), transparent 35%),
-    radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 40%),
-    radial-gradient(circle at bottom center, rgba(245, 158, 11, 0.12), transparent 45%),
-    linear-gradient(180deg, #030712 0%, #050816 50%, #070b18 100%);
+  background: #0d141d;
 }
 
+/* Subtle gold ambient glow — Executive Monolith backdrop */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 120px 120px;
-  mask-image: radial-gradient(circle at center, black 35%, transparent 85%);
-  opacity: 0.35;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(212, 175, 55, 0.06), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 80%, rgba(212, 175, 55, 0.04), transparent 60%);
+  z-index: 0;
 }
 
 button,
@@ -57,40 +52,52 @@ button {
   cursor: pointer;
 }
 
+/* ── Aethelgard Monolith Glass Panel ─────────────────────────────── */
 .glass-panel {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background:
-    linear-gradient(160deg, rgba(15, 23, 42, 0.88), rgba(6, 10, 24, 0.68)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: rgba(25, 32, 41, 0.80);
   backdrop-filter: blur(24px);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.02),
-    0 16px 60px rgba(0, 0, 0, 0.4);
+    0 0 0 1px rgba(212, 175, 55, 0.04),
+    0 16px 60px rgba(0, 0, 0, 0.45);
 }
 
+/* Top-edge inner light catch — machined obsidian effect */
 .glass-panel::after {
   content: "";
   position: absolute;
   inset: 1px;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(130deg, rgba(255, 255, 255, 0.06), transparent 45%);
-  opacity: 0.5;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), transparent 40%);
+  opacity: 0.7;
 }
 
+/* ── Gold ambient orb (used in App.tsx) ──────────────────────────── */
 .orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(72px);
-  opacity: 0.3;
+  filter: blur(80px);
+  opacity: 0.18;
   pointer-events: none;
+}
+
+/* ── Monolith nav active glow marker ─────────────────────────────── */
+.nav-gold-glow {
+  box-shadow: inset 3px 0 0 #D4AF37, 0 0 20px rgba(212, 175, 55, 0.08);
+}
+
+/* ── Typography helpers ───────────────────────────────────────────── */
+.serif {
+  font-family: "Playfair Display", "Noto Serif", Georgia, serif;
 }
 
 .mono {
   font-family: "IBM Plex Mono", "Cascadia Code", monospace;
 }
 
+/* ── Scrollbars ───────────────────────────────────────────────────── */
 .hide-scrollbar {
   scrollbar-width: none;
 }
@@ -99,16 +106,36 @@ button {
   display: none;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(13, 20, 29, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(212, 175, 55, 0.25);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.45);
+}
+
+/* ── XP Progress bar — gold shimmer ──────────────────────────────── */
 .progress-shimmer {
   background-image: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.24) 50%,
-    rgba(255, 255, 255, 0.1) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.08) 100%
   );
   background-size: 200% 100%;
 }
 
+/* ── Heatmap cell ─────────────────────────────────────────────────── */
 .heat-cell {
   position: relative;
   overflow: hidden;
@@ -119,24 +146,6 @@ button {
   position: absolute;
   inset: 1px;
   border-radius: inherit;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08), transparent 55%);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), transparent 55%);
   opacity: 0.5;
-}
-
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.55);
-}
-
-::-webkit-scrollbar-thumb {
-  border-radius: 9999px;
-  background: rgba(148, 163, 184, 0.35);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.5);
 }

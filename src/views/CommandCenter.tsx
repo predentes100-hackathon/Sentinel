@@ -34,59 +34,62 @@ export function CommandCenter({
   onCompleteHabit: (habitId: string) => void;
 }) {
   return (
-    <section className="glass-panel min-h-[calc(100vh-2rem)] rounded-[32px] p-4 sm:p-6">
+    <section className="glass-panel min-h-[calc(100vh-2rem)] rounded-[8px] p-4 sm:p-6">
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
         <div className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.9fr]">
-            <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+            {/* Profile + XP Card */}
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center gap-4">
                   <Avatar member={member} large />
                   <div>
-                    <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Top Header</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">
+                    <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Life OS · Command Center</p>
+                    <h2 className="serif mt-2 text-3xl font-semibold tracking-tight text-[#dce3f0]">
                       Level {member.level}
                     </h2>
-                    <p className="mt-2 text-sm text-slate-400">
+                    <p className="mt-2 text-sm text-[#d0c5af]">
                       Your operating rhythm looks strong. Keep stacking clean wins.
                     </p>
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Momentum</p>
-                  <div className="mt-2 flex items-center gap-2 text-2xl font-semibold text-white">
-                    <BadgeCheck className="h-5 w-5 text-cyan-200" />
+                <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#d0c5af]">Momentum</p>
+                  <div className="mt-2 flex items-center gap-2 text-2xl font-semibold text-[#dce3f0]">
+                    <BadgeCheck className="h-5 w-5 text-[#D4AF37]" />
                     {completionRate}% executed
                   </div>
                 </div>
               </div>
 
+              {/* Gold XP bar */}
               <div className="mt-6">
-                <div className="flex items-center justify-between text-sm text-slate-300">
+                <div className="flex items-center justify-between text-sm text-[#d0c5af]">
                   <span className="mono">
                     {member.xp}/{member.xpGoal} XP to Level {member.level + 1}
                   </span>
-                  <span className="text-xs uppercase tracking-[0.25em] text-cyan-200">
-                    Animated Progress
+                  <span className="text-xs uppercase tracking-[0.25em] text-[#D4AF37]">
+                    Golden Thread
                   </span>
                 </div>
-                <div className="mt-3 h-4 overflow-hidden rounded-full bg-slate-950/50">
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#080f17]">
                   <div
-                    className="progress-shimmer h-full animate-shimmer rounded-full bg-gradient-to-r from-cyan-300 via-indigo-300 to-fuchsia-300 transition-all duration-700"
+                    className="progress-shimmer h-full rounded-full bg-gradient-to-r from-[#D4AF37] via-[#f2ca50] to-[#D4AF37] transition-all duration-700"
                     style={{ width: `${Math.min((member.xp / member.xpGoal) * 100, 100)}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+            {/* Balance Pulse */}
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Wealth Widget</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Balance Pulse</h3>
+                  <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Wealth Widget</p>
+                  <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Balance Pulse</h3>
                 </div>
-                <div className="rounded-2xl border border-emerald-300/15 bg-emerald-400/10 p-3 text-emerald-100">
+                <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/10 p-3 text-[#D4AF37]">
                   <IndianRupee className="h-5 w-5" />
                 </div>
               </div>
@@ -115,13 +118,14 @@ export function CommandCenter({
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          {/* Task Board */}
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Action Board</p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">Today&apos;s mission queue</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Action Board</p>
+                <h3 className="serif mt-2 text-2xl font-semibold text-[#dce3f0]">Today&apos;s mission queue</h3>
               </div>
-              <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-slate-300">
+              <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-sm text-[#d0c5af]">
                 {tasks.filter((task) => !task.completed).length} active actions
               </div>
             </div>
@@ -132,37 +136,38 @@ export function CommandCenter({
                 return (
                   <article
                     key={task.id}
-                    className={`relative overflow-hidden rounded-[26px] border p-4 transition sm:p-5 ${
+                    className={`relative overflow-hidden rounded-[4px] border p-4 transition sm:p-5 ${
                       task.completed
-                        ? "border-emerald-300/20 bg-emerald-500/10"
-                        : "border-white/8 bg-white/[0.03] hover:-translate-y-0.5 hover:border-white/12 hover:bg-white/[0.05]"
+                        ? "border-[#D4AF37]/15 bg-[#D4AF37]/5"
+                        : "border-[#D4AF37]/10 bg-[#192029] hover:-translate-y-0.5 hover:border-[#D4AF37]/25 hover:bg-[#232a34]"
                     }`}
                   >
-                    <div className={`absolute inset-y-0 left-0 w-1 bg-gradient-to-b ${meta.glowClass}`} />
+                    {/* Priority left-border marker */}
+                    <div className={`absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b ${meta.glowClass}`} />
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="pr-4">
                         <div className="flex flex-wrap items-center gap-2">
                           <span
-                            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${meta.pillClass}`}
+                            className={`inline-flex items-center rounded-[2px] border px-3 py-1 text-xs font-semibold ${meta.pillClass}`}
                           >
                             {meta.label}
                           </span>
                           {task.recurrenceType === "daily" ? (
-                            <span className="inline-flex items-center rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-3 py-1 text-xs font-semibold text-fuchsia-100">
+                            <span className="inline-flex items-center rounded-[2px] border border-[#D4AF37]/20 bg-[#D4AF37]/10 px-3 py-1 text-xs font-semibold text-[#D4AF37]">
                               Daily
                             </span>
                           ) : null}
-                          <span className="inline-flex items-center rounded-full border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-slate-300">
+                          <span className="inline-flex items-center rounded-[2px] border border-[#4d4635] bg-[#080f17] px-3 py-1 text-xs text-[#d0c5af]">
                             +{task.xpValue} XP
                           </span>
-                          <span className="text-xs uppercase tracking-[0.28em] text-slate-500">
+                          <span className="text-xs uppercase tracking-[0.28em] text-[#99907c]">
                             {task.dueLabel}
                           </span>
                         </div>
-                        <h4 className="mt-4 text-lg font-semibold text-white">{task.title}</h4>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{task.description}</p>
+                        <h4 className="mt-4 text-lg font-semibold text-[#dce3f0]">{task.title}</h4>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d0c5af]">{task.description}</p>
                         {task.recurrenceType === "daily" ? (
-                          <p className="mt-2 text-xs uppercase tracking-[0.24em] text-fuchsia-200">
+                          <p className="mt-2 text-xs uppercase tracking-[0.24em] text-[#D4AF37]/70">
                             Resets automatically tomorrow
                           </p>
                         ) : null}
@@ -172,10 +177,10 @@ export function CommandCenter({
                         type="button"
                         disabled={task.completed}
                         onClick={() => onCompleteTask(task.id)}
-                        className={`inline-flex min-w-[160px] items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        className={`inline-flex min-w-[160px] items-center justify-center gap-2 rounded-[4px] border px-4 py-3 text-sm font-semibold transition ${
                           task.completed
-                            ? "border-emerald-300/15 bg-emerald-400/10 text-emerald-100"
-                            : "border-cyan-300/15 bg-cyan-400/10 text-cyan-100 hover:border-cyan-200/25 hover:bg-cyan-300/15"
+                            ? "border-[#D4AF37]/20 bg-[#D4AF37]/10 text-[#D4AF37]"
+                            : "border-[#D4AF37]/20 bg-[#192029] text-[#dce3f0] hover:border-[#D4AF37]/40 hover:bg-[#D4AF37]/10 hover:text-[#D4AF37]"
                         }`}
                       >
                         <Check className="h-4 w-4" />
@@ -190,13 +195,14 @@ export function CommandCenter({
         </div>
 
         <div className="space-y-6">
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          {/* Telemetry cards */}
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Focus Readout</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Execution telemetry</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Focus Readout</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Execution telemetry</h3>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-cyan-100">
+              <div className="rounded-[4px] border border-[#D4AF37]/15 bg-[#D4AF37]/5 p-3 text-[#D4AF37]">
                 <LineChart className="h-5 w-5" />
               </div>
             </div>
@@ -207,7 +213,7 @@ export function CommandCenter({
                 value={`${tasks.filter((task) => task.priority === "Deep Work" && !task.completed).length}`}
                 sublabel="high-leverage blocks"
                 icon={Target}
-                tone="fuchsia"
+                tone="gold"
               />
               <MetricCard
                 title="Completed today"
@@ -226,34 +232,35 @@ export function CommandCenter({
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          {/* Subscriptions */}
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Subscriptions</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Upcoming reminders</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Subscriptions</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Upcoming reminders</h3>
               </div>
-              <BellRing className="h-5 w-5 text-cyan-200" />
+              <BellRing className="h-5 w-5 text-[#D4AF37]" />
             </div>
 
             <div className="mt-5 space-y-3">
               {subscriptions.map((subscription) => (
                 <div
                   key={subscription.id}
-                  className="rounded-[24px] border border-white/8 bg-white/[0.03] p-4"
+                  className="rounded-[4px] border border-[#D4AF37]/15 bg-[#192029] p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-white">{subscription.title}</p>
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="text-sm font-semibold text-[#dce3f0]">{subscription.title}</p>
+                      <p className="mt-1 text-xs text-[#99907c]">
                         {subscription.frequency} | remind {Math.floor(subscription.reminderMinutes / 60)}h before
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-cyan-100">
+                    <div className="rounded-[4px] border border-[#D4AF37]/25 bg-[#D4AF37]/10 px-3 py-2 text-sm text-[#D4AF37]">
                       {formatCurrency(subscription.amount)}
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 text-sm text-slate-300">
-                    <CalendarClock className="h-4 w-4 text-slate-500" />
+                  <div className="mt-3 flex items-center gap-2 text-sm text-[#d0c5af]">
+                    <CalendarClock className="h-4 w-4 text-[#99907c]" />
                     Due {formatDateTime(subscription.nextDueAt)}
                   </div>
                 </div>
@@ -263,13 +270,14 @@ export function CommandCenter({
         </div>
       </div>
 
-      <div className="mt-6 glass-panel rounded-[28px] p-5 sm:p-6">
+      {/* Habit Streak Grid */}
+      <div className="mt-6 glass-panel rounded-[8px] p-5 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Habit Streak</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">Daily routines with XP feedback</h3>
+            <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Habit Streak</p>
+            <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Daily routines with XP feedback</h3>
           </div>
-          <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-xs uppercase tracking-[0.28em] text-slate-300">
+          <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-[#d0c5af]">
             Tap to complete
           </div>
         </div>
@@ -283,30 +291,30 @@ export function CommandCenter({
                 type="button"
                 onClick={() => onCompleteHabit(habit.id)}
                 disabled={habit.completed}
-                className={`relative min-w-[220px] overflow-hidden rounded-[26px] border p-5 text-left transition ${
+                className={`relative min-w-[220px] overflow-hidden rounded-[4px] border p-5 text-left transition ${
                   habit.completed
-                    ? "border-emerald-300/20 bg-emerald-500/10"
-                    : "border-white/8 bg-white/[0.03] hover:-translate-y-0.5 hover:border-cyan-200/20 hover:bg-white/[0.05]"
+                    ? "border-[#D4AF37]/25 bg-[#D4AF37]/8"
+                    : "border-[#D4AF37]/12 bg-[#192029] hover:-translate-y-0.5 hover:border-[#D4AF37]/30 hover:bg-[#232a34]"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`rounded-2xl p-3 ${
-                      habit.completed ? "bg-emerald-400/15 text-emerald-100" : "bg-white/5 text-cyan-100"
+                    className={`rounded-[4px] p-3 ${
+                      habit.completed ? "bg-[#D4AF37]/15 text-[#D4AF37]" : "bg-[#232a34] text-[#d0c5af]"
                     }`}
                   >
                     <Icon className="h-5 w-5" />
                   </span>
-                  <span className="rounded-full border border-white/10 bg-slate-950/50 px-3 py-1 text-xs text-slate-300">
+                  <span className="rounded-[2px] border border-[#4d4635] bg-[#080f17] px-3 py-1 text-xs text-[#d0c5af]">
                     +{habit.xpValue} XP
                   </span>
                 </div>
-                <h4 className="mt-4 text-base font-semibold text-white">{habit.title}</h4>
-                <p className="mt-2 text-sm text-slate-400">
-                  {habit.completed ? "Completed for today" : "Click to lock the streak and bank XP"}
+                <h4 className="mt-4 text-base font-semibold text-[#dce3f0]">{habit.title}</h4>
+                <p className="mt-2 text-sm text-[#99907c]">
+                  {habit.completed ? "Streak secured for today" : "Click to lock the streak and bank XP"}
                 </p>
                 {habitBurstId === habit.id ? (
-                  <span className="absolute right-5 top-3 rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-semibold text-cyan-100 animate-float-up">
+                  <span className="absolute right-5 top-3 rounded-[2px] bg-[#D4AF37]/15 px-3 py-1 text-xs font-semibold text-[#D4AF37] animate-float-up">
                     +{habit.xpValue} XP
                   </span>
                 ) : null}

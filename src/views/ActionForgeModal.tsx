@@ -1,73 +1,58 @@
 import { Plus, X } from "lucide-react";
 import { FINANCE_CATEGORIES, PRIORITY_META, formatCurrency } from "../data";
 import { Field, Toggle } from "../components/shared";
-import type {
-  ActionFormState,
-  FinanceCategory,
-  SubscriptionItem,
-  TransactionType
-} from "../types";
+import type { ActionFormState, FinanceCategory, SubscriptionItem, TransactionType } from "../types";
 
 export function ActionForgeModal({
-  form,
-  isSaving,
-  splitNames,
-  liveSplitSummary,
-  splitPerHead,
-  onClose,
-  onFormChange,
-  onCommit
+  form, isSaving, splitNames, liveSplitSummary, splitPerHead,
+  onClose, onFormChange, onCommit
 }: {
-  form: ActionFormState;
-  isSaving: boolean;
-  splitNames: string[];
-  liveSplitSummary: string;
-  splitPerHead: number;
+  form: ActionFormState; isSaving: boolean; splitNames: string[];
+  liveSplitSummary: string; splitPerHead: number;
   onClose: () => void;
   onFormChange: (updater: ActionFormState | ((current: ActionFormState) => ActionFormState)) => void;
   onCommit: () => void;
 }) {
   function update<K extends keyof ActionFormState>(key: K, value: ActionFormState[K]) {
-    onFormChange((current) => ({
-      ...current,
-      [key]: value
-    }));
+    onFormChange((current) => ({ ...current, [key]: value }));
   }
 
   function updateSplitName(index: number, value: string) {
     onFormChange((current) => ({
       ...current,
-      splitNames: current.splitNames.map((name, nameIndex) => (nameIndex === index ? value : name))
+      splitNames: current.splitNames.map((name, i) => (i === index ? value : name))
     }));
   }
 
   function addSplitName() {
-    onFormChange((current) => ({
-      ...current,
-      splitNames: [...current.splitNames, ""]
-    }));
+    onFormChange((current) => ({ ...current, splitNames: [...current.splitNames, ""] }));
   }
 
   function removeSplitName(index: number) {
     onFormChange((current) => ({
       ...current,
-      splitNames: current.splitNames.filter((_, nameIndex) => nameIndex !== index)
+      splitNames: current.splitNames.filter((_, i) => i !== index)
     }));
   }
 
+  const inputClass = "w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-4 text-[#dce3f0] outline-none transition placeholder:text-[#99907c] focus:border-[#D4AF37]/50 focus:ring-0";
+  const selectClass = "w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-3 text-[#dce3f0] outline-none focus:border-[#D4AF37]/50";
+
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#0d141d]/70 p-4 backdrop-blur-md">
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Global Add Task"
-        className="glass-panel max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[32px] p-5 sm:p-6"
+        aria-label="Action Forge"
+        className="max-h-[92vh] w-full max-w-4xl overflow-auto rounded-[8px] border border-[#D4AF37]/20 bg-[#192029]/90 p-5 backdrop-blur-2xl sm:p-8"
+        style={{ boxShadow: "0 0 60px rgba(212,175,55,0.06), 0 24px 80px rgba(0,0,0,0.6)" }}
       >
+        {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Action Forge</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Global Add Task</h2>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="text-xs uppercase tracking-[0.32em] text-[#99907c]">Action Forge</p>
+            <h2 className="serif mt-2 text-3xl font-semibold tracking-tight text-[#dce3f0]">Commit your next move</h2>
+            <p className="mt-2 text-sm text-[#99907c]">
               Title it, gamify it, wire the money flow, and optionally attach a subscription reminder.
             </p>
           </div>
@@ -75,37 +60,38 @@ export function ActionForgeModal({
             type="button"
             aria-label="Close Action Forge"
             onClick={onClose}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-slate-300 transition hover:bg-white/[0.06]"
+            className="rounded-[4px] border border-[#D4AF37]/20 bg-[#232a34] p-3 text-[#d0c5af] transition hover:border-[#D4AF37]/40 hover:text-[#D4AF37]"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        {/* Body grid */}
+        <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-5">
-            <Field label="Title">
+            {/* Title */}
+            <Field label="Action Title">
               <input
                 value={form.title}
-                onChange={(event) => update("title", event.target.value)}
+                onChange={(e) => update("title", e.target.value)}
                 placeholder="Finish AxiomIVE onboarding flow"
-                className="w-full rounded-[22px] border border-white/10 bg-slate-950/45 px-4 py-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/25"
+                className={inputClass}
               />
             </Field>
 
+            {/* Description */}
             <Field label="Description">
               <textarea
-                rows={6}
+                rows={5}
                 value={form.description}
-                onChange={(event) => update("description", event.target.value)}
+                onChange={(e) => update("description", e.target.value)}
                 placeholder="Capture the why, the deliverable, and any context your future self will thank you for."
-                className="w-full rounded-[22px] border border-white/10 bg-slate-950/45 px-4 py-4 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-300/25"
+                className={inputClass}
               />
             </Field>
 
-            <Field
-              label="Priority Level"
-              helper="XP is automatically assigned: Low 10, Medium 20, High 30, Deep Work 50."
-            >
+            {/* Priority pills */}
+            <Field label="Priority Level" helper="XP is automatically assigned: Low 10, Medium 20, High 30, Deep Work 50.">
               <div className="grid gap-3 sm:grid-cols-2">
                 {(Object.keys(PRIORITY_META) as Array<keyof typeof PRIORITY_META>).map((priority) => {
                   const meta = PRIORITY_META[priority];
@@ -115,26 +101,24 @@ export function ActionForgeModal({
                       key={priority}
                       type="button"
                       onClick={() => update("priority", priority)}
-                      className={`rounded-[22px] border p-4 text-left transition ${
+                      className={`rounded-[4px] border p-4 text-left transition ${
                         active
-                          ? "border-cyan-300/25 bg-cyan-300/10 text-white"
-                          : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/15 hover:bg-white/[0.05]"
+                          ? "border-[#D4AF37]/50 bg-[#D4AF37]/10 text-[#D4AF37]"
+                          : "border-[#D4AF37]/12 bg-[#232a34] text-[#d0c5af] hover:border-[#D4AF37]/25 hover:bg-[#2e353f]"
                       }`}
+                      style={active ? { boxShadow: "0 0 16px rgba(212,175,55,0.10)" } : undefined}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold">{priority}</span>
-                        <span className="rounded-full border border-white/10 bg-slate-950/55 px-3 py-1 text-xs text-cyan-100">
+                        <span className="rounded-[2px] border border-[#4d4635] bg-[#080f17] px-3 py-1 text-xs text-[#D4AF37]">
                           +{meta.xp} XP
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-400">
-                        {priority === "Low"
-                          ? "Quick reset"
-                          : priority === "Medium"
-                            ? "Structured follow-through"
-                            : priority === "High"
-                              ? "High-friction deliverable"
-                              : "Full-focus execution block"}
+                      <p className={`mt-2 text-sm ${active ? "text-[#D4AF37]/80" : "text-[#99907c]"}`}>
+                        {priority === "Low" ? "Quick reset"
+                          : priority === "Medium" ? "Structured follow-through"
+                          : priority === "High" ? "High-friction deliverable"
+                          : "Full-focus execution block"}
                       </p>
                     </button>
                   );
@@ -142,31 +126,28 @@ export function ActionForgeModal({
               </div>
             </Field>
 
-            <div className="glass-panel rounded-[28px] p-5">
+            {/* Repeats Daily */}
+            <div className="rounded-[8px] border border-[#D4AF37]/15 bg-[#232a34] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Daily Task Engine</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Repeat every day</h3>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Daily Task Engine</p>
+                  <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Repeat every day</h3>
+                  <p className="mt-2 text-sm text-[#99907c]">
                     Daily tasks reset automatically each new day and can award XP once per day.
                   </p>
                 </div>
                 <Toggle checked={form.repeatsDaily} onChange={(checked) => update("repeatsDaily", checked)} />
               </div>
-
               {form.repeatsDaily ? (
                 <div className="mt-5">
                   <Field label="Daily time">
-                    <input
-                      type="time"
-                      value={form.dailyTime}
-                      onChange={(event) => update("dailyTime", event.target.value)}
-                      className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                    />
+                    <input type="time" value={form.dailyTime}
+                      onChange={(e) => update("dailyTime", e.target.value)}
+                      className={selectClass} />
                   </Field>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-slate-400">
+                <p className="mt-5 text-sm text-[#99907c]">
                   Leave this off for one-time tasks that disappear after completion.
                 </p>
               )}
@@ -174,74 +155,61 @@ export function ActionForgeModal({
           </div>
 
           <div className="space-y-5">
-            <div className="glass-panel rounded-[28px] p-5">
+            {/* Transaction toggle */}
+            <div className="rounded-[8px] border border-[#D4AF37]/15 bg-[#232a34] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Finance Engine</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Transaction-aware action</h3>
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Finance Engine</p>
+                  <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Transaction-aware action</h3>
                 </div>
-                <Toggle
-                  checked={form.involvesTransaction}
-                  onChange={(checked) => update("involvesTransaction", checked)}
-                />
+                <Toggle checked={form.involvesTransaction}
+                  onChange={(checked) => update("involvesTransaction", checked)} />
               </div>
 
               {form.involvesTransaction ? (
                 <div className="mt-5 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Type">
-                      <select
-                        value={form.transactionType}
-                        onChange={(event) => update("transactionType", event.target.value as TransactionType)}
-                        className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                      >
+                      <select value={form.transactionType}
+                        onChange={(e) => update("transactionType", e.target.value as TransactionType)}
+                        className={selectClass}>
                         <option value="Spend">Spend</option>
                         <option value="Earn">Earn</option>
                       </select>
                     </Field>
                     <Field label="Amount (₹)">
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.amount}
-                        onChange={(event) => update("amount", event.target.value)}
-                        className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                        placeholder="500"
-                      />
+                      <input type="number" min="0" value={form.amount}
+                        onChange={(e) => update("amount", e.target.value)}
+                        className={selectClass} placeholder="500" />
                     </Field>
                   </div>
 
                   <Field label="Category">
-                    <select
-                      value={form.category}
-                      onChange={(event) => update("category", event.target.value as FinanceCategory)}
-                      className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                    >
-                      {FINANCE_CATEGORIES.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
+                    <select value={form.category}
+                      onChange={(e) => update("category", e.target.value as FinanceCategory)}
+                      className={selectClass}>
+                      {FINANCE_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
                   </Field>
 
-                  <div className="space-y-3 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                  {/* Split Bill */}
+                  <div className="space-y-3 rounded-[4px] border border-[#D4AF37]/12 bg-[#2e353f] p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-white">Split Bill?</p>
-                        <p className="mt-1 text-sm text-slate-400">Share the amount with friends and see the split live.</p>
+                        <p className="font-semibold text-[#dce3f0]">Split Bill?</p>
+                        <p className="mt-1 text-sm text-[#99907c]">Share the amount with friends and see the split live.</p>
                       </div>
                       <Toggle checked={form.splitBill} onChange={(checked) => update("splitBill", checked)} />
                     </div>
 
                     {form.splitBill ? (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-3 rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3">
+                        <div className="flex items-center justify-between gap-3 rounded-[4px] border border-[#D4AF37]/12 bg-[#232a34] px-4 py-3">
                           <div>
-                            <p className="font-medium text-white">Am I included?</p>
-                            <p className="mt-1 text-xs text-slate-400">
-                              Toggle off if you paid on behalf of everyone else.
-                            </p>
+                            <p className="font-medium text-[#dce3f0]">Am I included?</p>
+                            <p className="mt-1 text-xs text-[#99907c]">Toggle off if you paid on behalf of everyone else.</p>
                           </div>
                           <Toggle checked={form.amIncluded} onChange={(checked) => update("amIncluded", checked)} />
                         </div>
@@ -249,18 +217,13 @@ export function ActionForgeModal({
                         <div className="space-y-3">
                           {form.splitNames.map((name, index) => (
                             <div key={`${index}-${name}`} className="flex gap-3">
-                              <input
-                                value={name}
-                                onChange={(event) => updateSplitName(index, event.target.value)}
+                              <input value={name}
+                                onChange={(e) => updateSplitName(index, e.target.value)}
                                 placeholder={index === 0 ? "Nihali" : "Add another name"}
-                                className="w-full rounded-[18px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                              />
+                                className="w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-3 text-[#dce3f0] outline-none focus:border-[#D4AF37]/40 placeholder:text-[#99907c]" />
                               {form.splitNames.length > 1 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => removeSplitName(index)}
-                                  className="rounded-[18px] border border-white/10 bg-white/[0.03] px-4 py-3 text-slate-300 transition hover:bg-white/[0.06]"
-                                >
+                                <button type="button" onClick={() => removeSplitName(index)}
+                                  className="rounded-[4px] border border-[#D4AF37]/15 bg-[#2e353f] px-4 py-3 text-[#d0c5af] transition hover:border-[#D4AF37]/30">
                                   Remove
                                 </button>
                               ) : null}
@@ -268,19 +231,16 @@ export function ActionForgeModal({
                           ))}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={addSplitName}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-200 transition hover:bg-white/[0.06]"
-                        >
+                        <button type="button" onClick={addSplitName}
+                          className="inline-flex items-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3 text-sm text-[#D4AF37] transition hover:bg-[#D4AF37]/10">
                           <Plus className="h-4 w-4" />
                           Add name
                         </button>
 
-                        <div className="rounded-[20px] border border-cyan-300/15 bg-cyan-400/10 p-4">
-                          <p className="text-sm font-semibold text-cyan-100">{liveSplitSummary}</p>
+                        <div className="rounded-[4px] border border-[#D4AF37]/25 bg-[#D4AF37]/8 p-4">
+                          <p className="text-sm font-semibold text-[#D4AF37]">{liveSplitSummary}</p>
                           {splitNames.length > 0 && splitPerHead > 0 ? (
-                            <p className="mt-2 text-sm text-cyan-50">
+                            <p className="mt-2 text-sm text-[#D4AF37]/80">
                               {splitNames.join(", ")} {splitNames.length === 1 ? "owes" : "owe"} {formatCurrency(splitPerHead)} each.
                             </p>
                           ) : null}
@@ -290,38 +250,30 @@ export function ActionForgeModal({
                   </div>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-slate-400">
+                <p className="mt-5 text-sm text-[#99907c]">
                   Toggle this on to log spend/earn activity, categories, splits, and balance updates.
                 </p>
               )}
             </div>
 
-            <div className="glass-panel rounded-[28px] p-5">
+            {/* Subscription toggle */}
+            <div className="rounded-[8px] border border-[#D4AF37]/15 bg-[#232a34] p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Subscription Reminder</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Recurring charge tracking</h3>
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Subscription Reminder</p>
+                  <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Recurring charge tracking</h3>
                 </div>
-                <Toggle
-                  checked={form.createSubscription}
-                  onChange={(checked) => update("createSubscription", checked)}
-                />
+                <Toggle checked={form.createSubscription}
+                  onChange={(checked) => update("createSubscription", checked)} />
               </div>
 
               {form.createSubscription ? (
                 <div className="mt-5 space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Frequency">
-                      <select
-                        value={form.subscriptionFrequency}
-                        onChange={(event) =>
-                          update(
-                            "subscriptionFrequency",
-                            event.target.value as SubscriptionItem["frequency"]
-                          )
-                        }
-                        className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                      >
+                      <select value={form.subscriptionFrequency}
+                        onChange={(e) => update("subscriptionFrequency", e.target.value as SubscriptionItem["frequency"])}
+                        className={selectClass}>
                         <option value="Weekly">Weekly</option>
                         <option value="Monthly">Monthly</option>
                         <option value="Quarterly">Quarterly</option>
@@ -329,27 +281,19 @@ export function ActionForgeModal({
                       </select>
                     </Field>
                     <Field label="Reminder lead time (hours)">
-                      <input
-                        type="number"
-                        min="1"
-                        value={form.reminderHours}
-                        onChange={(event) => update("reminderHours", Number(event.target.value))}
-                        className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                      />
+                      <input type="number" min="1" value={form.reminderHours}
+                        onChange={(e) => update("reminderHours", Number(e.target.value))}
+                        className={selectClass} />
                     </Field>
                   </div>
-
                   <Field label="Next due time">
-                    <input
-                      type="datetime-local"
-                      value={form.nextDueAt}
-                      onChange={(event) => update("nextDueAt", event.target.value)}
-                      className="w-full rounded-[20px] border border-white/10 bg-slate-950/45 px-4 py-3 text-white outline-none focus:border-cyan-300/25"
-                    />
+                    <input type="datetime-local" value={form.nextDueAt}
+                      onChange={(e) => update("nextDueAt", e.target.value)}
+                      className={selectClass} />
                   </Field>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-slate-400">
+                <p className="mt-5 text-sm text-[#99907c]">
                   Turn this on for fixed subscriptions and custom reminder timing.
                 </p>
               )}
@@ -357,19 +301,23 @@ export function ActionForgeModal({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-slate-400">
+        {/* Footer */}
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-[#D4AF37]/10 pt-6">
+          <p className="text-sm text-[#99907c]">
             Committing this action updates the board instantly, plus wealth and reminder modules when enabled.
           </p>
-          <button
-            type="button"
-            disabled={isSaving}
-            onClick={onCommit}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-cyan-200/20 bg-gradient-to-r from-cyan-400/90 to-indigo-500/90 px-5 py-4 text-sm font-semibold text-slate-950 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Plus className="h-5 w-5" />
-            {isSaving ? "Committing..." : "Commit Action"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onClose}
+              className="inline-flex items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/25 bg-transparent px-5 py-3 text-sm font-semibold text-[#d0c5af] transition hover:border-[#D4AF37]/50 hover:text-[#D4AF37]">
+              Cancel
+            </button>
+            <button type="button" disabled={isSaving} onClick={onCommit}
+              className="inline-flex items-center justify-center gap-2 rounded-[4px] bg-[#D4AF37] px-6 py-3 text-sm font-bold text-[#0d141d] transition hover:bg-[#f2ca50] disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ boxShadow: "0 0 24px rgba(212,175,55,0.25)" }}>
+              <Plus className="h-5 w-5" />
+              {isSaving ? "Committing..." : "Commit Action"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

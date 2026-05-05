@@ -1,24 +1,13 @@
 import { ArrowDownRight, ArrowUpRight, Sparkles, Wallet } from "lucide-react";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
+  Area, AreaChart, Bar, BarChart, CartesianGrid,
+  ResponsiveContainer, Tooltip, XAxis, YAxis
 } from "recharts";
 import { HeatmapGrid, MonthlyHeatmap } from "../components/heatmaps";
 import type { HeatmapCell } from "../types";
 
 export function AnalyticsHub({
-  xpHeatmap,
-  inflowHeatmap,
-  outflowHeatmap,
-  trendSeries,
-  comparisonSeries
+  xpHeatmap, inflowHeatmap, outflowHeatmap, trendSeries, comparisonSeries
 }: {
   xpHeatmap: HeatmapCell[];
   inflowHeatmap: HeatmapCell[];
@@ -26,25 +15,35 @@ export function AnalyticsHub({
   trendSeries: { label: string; xp: number }[];
   comparisonSeries: { label: string; earned: number; spent: number }[];
 }) {
+  const tooltipStyle = {
+    borderRadius: 4,
+    border: "1px solid rgba(212,175,55,0.30)",
+    background: "rgba(25,32,41,0.96)",
+    color: "#dce3f0"
+  };
+
   return (
-    <section className="glass-panel min-h-[calc(100vh-2rem)] rounded-[32px] p-4 sm:p-6">
+    <section className="glass-panel min-h-[calc(100vh-2rem)] rounded-[8px] p-4 sm:p-6">
       <div className="space-y-6">
         <div>
-          <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Analytics Hub</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white">Heatmaps and momentum curves</h2>
-          <p className="mt-3 max-w-3xl text-sm text-slate-400">
+          <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Analytics Hub</p>
+          <h2 className="serif mt-2 text-3xl font-semibold tracking-tight text-[#dce3f0]">
+            Heatmaps and momentum curves
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm text-[#99907c]">
             Darker cells mark heavier focus or finance activity, while the charts surface XP velocity and spend versus earn rhythm.
           </p>
         </div>
 
+        {/* XP Heatmap + Trend chart row */}
         <div className="grid gap-6 2xl:grid-cols-[1.15fr_0.95fr]">
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">XP Matrix</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">GitHub-style contribution calendar</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">XP Matrix</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">GitHub-style contribution calendar</h3>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs uppercase tracking-[0.28em] text-cyan-100">
+              <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-3 py-2 text-xs uppercase tracking-[0.28em] text-[#D4AF37]">
                 Productivity intensity
               </div>
             </div>
@@ -53,96 +52,80 @@ export function AnalyticsHub({
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">XP Trend</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Weekly execution curve</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">XP Trend</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Weekly execution curve</h3>
               </div>
-              <Sparkles className="h-5 w-5 text-cyan-200" />
+              <Sparkles className="h-5 w-5 text-[#D4AF37]" />
             </div>
             <div className="mt-6 h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendSeries}>
                   <defs>
                     <linearGradient id="xpFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#67e8f9" stopOpacity={0.8} />
-                      <stop offset="100%" stopColor="#67e8f9" stopOpacity={0.05} />
+                      <stop offset="0%" stopColor="#D4AF37" stopOpacity={0.7} />
+                      <stop offset="100%" stopColor="#D4AF37" stopOpacity={0.04} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(148, 163, 184, 0.12)" vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(2,6,23,0.92)"
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="xp"
-                    stroke="#67e8f9"
-                    strokeWidth={3}
-                    fill="url(#xpFill)"
-                  />
+                  <CartesianGrid stroke="rgba(212,175,55,0.08)" vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#99907c", fontSize: 12 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#99907c", fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Area type="monotone" dataKey="xp" stroke="#D4AF37" strokeWidth={2} fill="url(#xpFill)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
+        {/* Inflow / Outflow / Earn-vs-Spend row */}
         <div className="grid gap-6 2xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Financial Heatmap</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Inflow</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Financial Heatmap</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Inflow</h3>
               </div>
-              <ArrowUpRight className="h-5 w-5 text-emerald-200" />
+              <ArrowUpRight className="h-5 w-5 text-[#D4AF37]" />
             </div>
             <div className="mt-6">
               <MonthlyHeatmap data={inflowHeatmap} variant="inflow" />
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Financial Heatmap</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Outflow</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Financial Heatmap</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Outflow</h3>
               </div>
-              <ArrowDownRight className="h-5 w-5 text-rose-200" />
+              <ArrowDownRight className="h-5 w-5 text-[#c0392b]/80" />
             </div>
             <div className="mt-6">
               <MonthlyHeatmap data={outflowHeatmap} variant="outflow" />
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-5 sm:p-6">
+          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Cash Flow</p>
-                <h3 className="mt-2 text-xl font-semibold text-white">Earn vs Spend</h3>
+                <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Cash Flow</p>
+                <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Earn vs Spend</h3>
               </div>
-              <Wallet className="h-5 w-5 text-cyan-200" />
+              <Wallet className="h-5 w-5 text-[#D4AF37]" />
             </div>
             <div className="mt-6 h-[320px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonSeries}>
-                  <CartesianGrid stroke="rgba(148, 163, 184, 0.12)" vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      background: "rgba(2,6,23,0.92)"
-                    }}
-                  />
-                  <Bar dataKey="earned" fill="#22c55e" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="spent" fill="#ef4444" radius={[8, 8, 0, 0]} />
+                  <CartesianGrid stroke="rgba(212,175,55,0.08)" vertical={false} />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: "#99907c", fontSize: 12 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: "#99907c", fontSize: 12 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  {/* Gold for earned, muted sienna for spent */}
+                  <Bar dataKey="earned" fill="#D4AF37" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="spent" fill="#7a2020" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

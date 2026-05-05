@@ -35,6 +35,7 @@ import {
   sortTransactions
 } from "./data";
 import { Avatar, MetricCard, SyncBadge } from "./components/shared";
+import { MotionLanding } from "./components/MotionLanding";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 import type {
   MemberProfile,
@@ -129,6 +130,7 @@ type RemoteSubscriptionRow = {
 
 function App() {
   const cached = loadCachedState();
+  const [hasEntered, setHasEntered] = useState(false);
   const [activeView, setActiveView] = useState<ViewKey>("command");
   const [member, setMember] = useState<MemberProfile>(cached.member);
   const [tasks, setTasks] = useState<TaskItem[]>(cached.tasks);
@@ -790,36 +792,40 @@ function App() {
     pushToast(mode === "full" ? "Full ledger CSV ready." : "Tax year report downloaded.");
   }
 
+  if (!hasEntered) {
+    return <MotionLanding onEnter={() => setHasEntered(true)} />;
+  }
+
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-4 text-slate-100 sm:px-6 lg:px-8">
-      <div className="orb left-[-120px] top-[140px] h-64 w-64 bg-cyan-500/40" />
-      <div className="orb bottom-[-80px] right-[10%] h-72 w-72 bg-fuchsia-600/30" />
+    <div className="relative min-h-screen overflow-hidden px-4 py-4 text-[#dce3f0] sm:px-6 lg:px-8">
+      <div className="orb left-[-160px] top-[100px] h-96 w-96 bg-[#D4AF37]/30" />
+      <div className="orb bottom-[-120px] right-[8%] h-80 w-80 bg-[#D4AF37]/15" />
 
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1800px] flex-col gap-4 lg:flex-row">
-        <aside className="glass-panel relative flex w-full shrink-0 flex-col overflow-hidden rounded-[30px] p-4 lg:w-[300px]">
-          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/35 to-transparent" />
+        <aside className="glass-panel relative flex w-full shrink-0 flex-col overflow-hidden rounded-[8px] p-4 lg:w-[300px]">
+          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.32em] text-slate-400">Life OS</p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white">Command Loop</h1>
+              <p className="text-xs uppercase tracking-[0.32em] text-[#99907c]">Life OS</p>
+              <h1 className="serif mt-2 text-2xl font-semibold tracking-tight text-[#dce3f0]">Sentinel</h1>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <Target className="h-5 w-5 text-cyan-200" />
+            <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/8 p-3">
+              <Target className="h-5 w-5 text-[#D4AF37]" />
             </div>
           </div>
 
-          <div className="glass-panel mb-6 rounded-[26px] p-4">
+          <div className="glass-panel mb-6 rounded-[8px] p-4">
             <div className="flex items-center gap-3">
               <Avatar member={member} />
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white">{member.displayName}</p>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="truncate text-sm font-medium text-[#dce3f0]">{member.displayName}</p>
+                <p className="mt-1 text-xs text-[#99907c]">
                   {currentUser ? currentUser.email : "Demo mode with local cache"}
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-950/35 px-3 py-2">
-              <div className="text-xs uppercase tracking-[0.28em] text-slate-400">Sync</div>
+            <div className="mt-4 flex items-center justify-between rounded-[4px] border border-[#D4AF37]/15 bg-[#0d141d]/50 px-3 py-2">
+              <div className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Sync</div>
               <SyncBadge syncState={syncState} />
             </div>
           </div>
@@ -834,23 +840,23 @@ function App() {
                   type="button"
                   aria-current={active ? "page" : undefined}
                   onClick={() => setActiveView(view.key)}
-                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${
+                  className={`relative flex w-full items-center justify-between rounded-[4px] border px-4 py-3 text-left transition ${
                     active
-                      ? "border-cyan-300/25 bg-cyan-400/12 text-white shadow-[0_12px_40px_rgba(34,211,238,0.14)]"
-                      : "border-white/5 bg-white/[0.03] text-slate-300 hover:border-white/10 hover:bg-white/[0.05]"
+                      ? "border-[#D4AF37]/30 bg-[#D4AF37]/8 text-[#dce3f0] nav-gold-glow"
+                      : "border-[#D4AF37]/8 bg-[#192029] text-[#d0c5af] hover:border-[#D4AF37]/20 hover:bg-[#232a34]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className={`rounded-2xl p-2 ${
-                        active ? "bg-cyan-300/15 text-cyan-100" : "bg-white/5 text-slate-400"
+                      className={`rounded-[4px] p-2 ${
+                        active ? "bg-[#D4AF37]/15 text-[#D4AF37]" : "bg-[#232a34] text-[#99907c]"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
                     </span>
                     <div>
                       <p className="font-medium">{view.label}</p>
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-[#99907c]">
                         {view.key === "command"
                           ? "Focus, tasks, rituals"
                           : view.key === "wealth"
@@ -859,7 +865,7 @@ function App() {
                       </p>
                     </div>
                   </div>
-                  <Check className={`h-4 w-4 ${active ? "text-cyan-200" : "text-transparent"}`} />
+                  <Check className={`h-4 w-4 ${active ? "text-[#D4AF37]" : "text-transparent"}`} />
                 </button>
               );
             })}
@@ -883,20 +889,20 @@ function App() {
           </div>
 
           <div className="mt-auto space-y-3 pt-6">
-            <div className="glass-panel rounded-[24px] p-4">
+            <div className="glass-panel rounded-[8px] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Google Login</p>
-                  <p className="mt-2 text-sm text-slate-300">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Google Login</p>
+                  <p className="mt-2 text-sm text-[#d0c5af]">
                     Connect Supabase auth to sync your member balances and activity stream.
                   </p>
                 </div>
-                <Database className="mt-0.5 h-5 w-5 text-cyan-200" />
+                <Database className="mt-0.5 h-5 w-5 text-[#D4AF37]" />
               </div>
               <button
                 type="button"
                 onClick={currentUser ? handleSignOut : handleGoogleAuth}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:border-cyan-300/20 hover:bg-cyan-300/10"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3 text-sm font-medium text-[#dce3f0] transition hover:border-[#D4AF37]/35 hover:bg-[#D4AF37]/12"
               >
                 {currentUser ? (
                   <>
@@ -912,21 +918,21 @@ function App() {
               </button>
             </div>
 
-            <div className="glass-panel rounded-[24px] p-4">
+            <div className="glass-panel rounded-[8px] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Workspace Reset</p>
-                  <p className="mt-2 text-sm text-slate-300">
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Workspace Reset</p>
+                  <p className="mt-2 text-sm text-[#d0c5af]">
                     Clear tasks, habits, ledger entries, subscriptions, and return to a clean slate.
                   </p>
                 </div>
-                <RefreshCcw className="mt-0.5 h-5 w-5 text-amber-200" />
+                <RefreshCcw className="mt-0.5 h-5 w-5 text-[#99907c]" />
               </div>
               <button
                 type="button"
                 onClick={handleResetWorkspace}
                 disabled={isSaving}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-medium text-amber-50 transition hover:bg-amber-300/15 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#7a2020]/30 bg-[#7a2020]/10 px-4 py-3 text-sm font-medium text-[#f87171]/80 transition hover:bg-[#7a2020]/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCcw className={`h-4 w-4 ${isSaving ? "animate-spin" : ""}`} />
                 {isSaving ? "Resetting workspace..." : "Reset workspace"}
@@ -935,7 +941,7 @@ function App() {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-hidden rounded-[32px]">
+        <main className="flex-1 overflow-hidden rounded-[8px]">
           <Suspense fallback={<SectionFallback />}>
             {showNewUserBlankState ? (
               <NewUserBlankState
@@ -983,10 +989,11 @@ function App() {
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-3 rounded-full border border-cyan-200/20 bg-gradient-to-r from-cyan-400/90 to-indigo-500/90 px-5 py-4 text-sm font-semibold text-slate-950 shadow-[0_20px_60px_rgba(34,211,238,0.3)] transition hover:scale-[1.02] hover:shadow-[0_30px_80px_rgba(34,211,238,0.4)]"
+        className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-3 rounded-[4px] bg-[#D4AF37] px-5 py-4 text-sm font-bold text-[#0d141d] transition hover:bg-[#f2ca50]"
+        style={{ boxShadow: "0 0 40px rgba(212,175,55,0.30), 0 16px 48px rgba(0,0,0,0.5)" }}
       >
         <Plus className="h-5 w-5" />
-        Global Add Task
+        Action Forge
       </button>
 
       {isModalOpen ? (
@@ -1082,8 +1089,8 @@ function buildPristineMember(displayName: string, avatarUrl: string | null): Mem
 
 function SectionFallback() {
   return (
-    <div className="glass-panel flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-[32px] p-6">
-      <div className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-slate-300">
+    <div className="glass-panel flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-[8px] p-6">
+      <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-sm text-[#D4AF37]">
         Loading view...
       </div>
     </div>
