@@ -53,14 +53,23 @@ button {
 }
 
 /* ── Aethelgard Monolith Glass Panel ─────────────────────────────── */
+@keyframes subtle-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 .glass-panel {
   position: relative;
   border: 1px solid rgba(212, 175, 55, 0.15);
-  background: rgba(25, 32, 41, 0.80);
+  background: linear-gradient(135deg, rgba(25, 32, 41, 0.75), rgba(15, 20, 25, 0.85), rgba(25, 32, 41, 0.75));
+  background-size: 200% 200%;
+  animation: subtle-gradient 15s ease infinite;
   backdrop-filter: blur(24px);
   box-shadow:
     0 0 0 1px rgba(212, 175, 55, 0.04),
-    0 16px 60px rgba(0, 0, 0, 0.45);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 60px rgba(0, 0, 0, 0.6);
 }
 
 /* Top-edge inner light catch — machined obsidian effect */

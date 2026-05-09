@@ -1,199 +1,95 @@
-import { Suspense, lazy, startTransition, useEffect, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import {
-  Check,
-  Database,
-  LogIn,
-  LogOut,
-  Plus,
-  RefreshCcw,
-  Target,
-  Users
-} from "lucide-react";
-import {
-  DEFAULT_HABITS,
-  DEFAULT_MEMBER,
-  DEFAULT_SUBSCRIPTIONS,
-  DEFAULT_TASKS,
-  DEFAULT_TRANSACTIONS,
-  STORAGE_KEY,
-  TODAY,
-  TODAY_LABEL,
-  VIEWS,
-  buildFinancialComparisonSeries,
-  buildInitialActionForm,
-  buildMonthlyCalendarHeatmap,
-  buildTrendSeries,
-  buildWeeklyHeatmap,
-  calculateXpGoal,
-  escapeCsv,
-  formatCurrency,
-  formatIndianTaxYear,
-  isDateInCurrentMonth,
-  isWithinIndianTaxYear,
-  loadCachedState,
-  sortTransactions
-} from "./data";
-import { Avatar, MetricCard, SyncBadge } from "./components/shared";
+import { Suspense, lazy, startTransition, useEffect, Component, ErrorInfo, ReactNode } from "react";
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Check, Database, LogIn, LogOut, Plus, RefreshCcw, Target, Users } from "lucide-react";
+
+import { useAppStore } from "./store";
+import { useAppActions, loadDashboardFromSupabase } from "./hooks/useAppActions";
+import { VIEWS, buildWeeklyHeatmap, buildMonthlyCalendarHeatmap, buildTrendSeries, buildFinancialComparisonSeries, sortTransactions, formatCurrency, formatIndianTaxYear, isWithinIndianTaxYear, escapeCsv, TODAY } from "./data";
+import { AnimatePresence } from "framer-motion";
+import { Avatar, MetricCard, SyncBadge, PageTransition } from "./components/shared";
+import { SkeletonLoader } from "./components/SkeletonLoader";
+import { AnimatedNumber } from "./components/AnimatedNumber";
 import { MotionLanding } from "./components/MotionLanding";
-import { isSupabaseConfigured, supabase } from "./lib/supabase";
-import type {
-  MemberProfile,
-  SortDirection,
-  SortKey,
-  SubscriptionItem,
-  SyncState,
-  TaskItem,
-  ToastState,
-  TransactionItem,
-  ViewKey
-} from "./types";
+import { DisclaimerView } from "./components/DisclaimerView";
+import { AIProfileForm } from "./components/AIProfileForm";
+import { supabase } from "./lib/supabase";
 
-const CommandCenter = lazy(async () => {
-  const module = await import("./views/CommandCenter");
-  return { default: module.CommandCenter };
-});
+const CommandCenter = lazy(() => import("./views/CommandCenter").then(m => ({ default: m.CommandCenter })));
+const WealthLedger = lazy(() => import("./views/WealthLedger").then(m => ({ default: m.WealthLedger })));
+const AnalyticsHub = lazy(() => import("./views/AnalyticsHub").then(m => ({ default: m.AnalyticsHub })));
+const NewUserBlankState = lazy(() => import("./views/NewUserBlankState").then(m => ({ default: m.NewUserBlankState })));
+const ActionForgeModal = lazy(() => import("./views/ActionForgeModal").then(m => ({ default: m.ActionForgeModal })));
 
-const WealthLedger = lazy(async () => {
-  const module = await import("./views/WealthLedger");
-  return { default: module.WealthLedger };
-});
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean}> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error("Caught by ErrorBoundary:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass-panel flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-[8px] p-6 text-rose-400">
+          <p>Something went wrong loading this view.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
-const AnalyticsHub = lazy(async () => {
-  const module = await import("./views/AnalyticsHub");
-  return { default: module.AnalyticsHub };
-});
+function SectionFallback() {
+  return (
+    <div className="glass-panel flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-[8px] p-6">
+      <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-sm text-[#D4AF37]">
+        Loading view...
+      </div>
+    </div>
+  );
+}
 
-const NewUserBlankState = lazy(async () => {
-  const module = await import("./views/NewUserBlankState");
-  return { default: module.NewUserBlankState };
-});
+function MainAppLayout() {
+  const store = useAppStore();
+  const actions = useAppActions();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-const ActionForgeModal = lazy(async () => {
-  const module = await import("./views/ActionForgeModal");
-  return { default: module.ActionForgeModal };
-});
-
-type RemoteMemberRow = {
-  user_id: string;
-  display_name: string;
-  avatar_url: string | null;
-  level: number;
-  xp: number;
-  xp_goal: number;
-  total_balance: number;
-  monthly_spend: number;
-  monthly_earned: number;
-};
-
-type RemoteTaskRow = {
-  id: string;
-  title: string;
-  description: string;
-  priority: TaskItem["priority"];
-  xp_value: number;
-  due_label: string;
-  completed: boolean;
-  recurrence_type?: "once" | "daily" | null;
-  scheduled_time?: string | null;
-  last_completed_on?: string | null;
-};
-
-type RemoteHabitRow = {
-  id: string;
-  title: string;
-  icon_key: "surya" | "footwork" | "read" | "hydrate";
-  xp_value: number;
-  completed: boolean;
-};
-
-type RemoteTransactionRow = {
-  id: string;
-  transaction_date: string;
-  task_name: string;
-  category: TransactionItem["category"];
-  transaction_type: TransactionItem["type"];
-  amount: number;
-  split_status: TransactionItem["splitStatus"];
-  participants: string[];
-  owed_to_me: number;
-};
-
-type RemoteSubscriptionRow = {
-  id: string;
-  title: string;
-  amount: number;
-  frequency: SubscriptionItem["frequency"];
-  next_due_at: string;
-  reminder_minutes: number;
-};
-
-function App() {
-  const cached = loadCachedState();
-  const [hasEntered, setHasEntered] = useState(false);
-  const [activeView, setActiveView] = useState<ViewKey>("command");
-  const [member, setMember] = useState<MemberProfile>(cached.member);
-  const [tasks, setTasks] = useState<TaskItem[]>(cached.tasks);
-  const [habits, setHabits] = useState(cached.habits);
-  const [transactions, setTransactions] = useState<TransactionItem[]>(cached.transactions);
-  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>(cached.subscriptions);
-  const [session, setSession] = useState<Session | null>(null);
-  const [syncState, setSyncState] = useState<SyncState>(isSupabaseConfigured ? "syncing" : "demo");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const [habitBurstId, setHabitBurstId] = useState<string | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [isSaving, setIsSaving] = useState(false);
-  const [actionForm, setActionForm] = useState(buildInitialActionForm());
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ member, tasks, habits, transactions, subscriptions })
-    );
-  }, [habits, member, subscriptions, tasks, transactions]);
+  const { member, tasks, habits, transactions, subscriptions, session, syncState, isModalOpen, toasts, habitBurstId, exportOpen, sortKey, sortDirection, isSaving, actionForm } = store;
 
   useEffect(() => {
     const client = supabase;
     if (!client) {
-      setSyncState("demo");
+      store.setSyncState("demo");
       return;
     }
 
     let isActive = true;
-
     startTransition(() => {
       void client.auth.getSession().then(({ data, error }) => {
-        if (!isActive) {
-          return;
-        }
+        if (!isActive) return;
         if (error) {
-          setSyncState("error");
-          pushToast("Supabase session check failed. Staying in demo mode.");
+          store.setSyncState("error");
+          store.pushToast("Supabase session check failed. Staying in demo mode.");
           return;
         }
 
-        setSession(data.session ?? null);
+        store.setSession(data.session ?? null);
         if (data.session?.user) {
-          setSyncState("syncing");
-          void loadDashboardFromSupabase(data.session.user);
+          store.setSyncState("syncing");
+          void loadDashboardFromSupabase(data.session.user, store);
         } else {
-          setSyncState("demo");
+          store.setSyncState("demo");
         }
       });
     });
 
     const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      store.setSession(nextSession);
       if (nextSession?.user) {
-        setSyncState("syncing");
+        store.setSyncState("syncing");
         startTransition(() => {
-          void loadDashboardFromSupabase(nextSession.user);
+          void loadDashboardFromSupabase(nextSession.user, store);
         });
       } else {
-        setSyncState("demo");
+        store.setSyncState("demo");
       }
     });
 
@@ -201,599 +97,77 @@ function App() {
       isActive = false;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Run once on mount
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key.toLowerCase() === "c" && !isModalOpen) {
+        e.preventDefault();
+        store.setIsModalOpen(true);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, store]);
 
   const currentUser = session?.user ?? null;
   const displayTasks = tasks.map((task) => ({
     ...task,
-    completed: isTaskCompletedForToday(task),
-    dueLabel: getTaskDisplayDueLabel(task)
+    completed: task.recurrenceType === "daily" ? task.lastCompletedOn === new Date().toISOString().slice(0, 10) : task.completed,
+    dueLabel: task.recurrenceType === "daily" ? "Daily" : task.dueLabel
   }));
-  const totalOwedToMe = transactions.reduce(
-    (sum, transaction) => sum + (transaction.splitStatus === "Pending" ? transaction.owedToMe : 0),
-    0
-  );
+  const totalOwedToMe = transactions.reduce((sum, txn) => sum + (txn.splitStatus === "Pending" ? txn.owedToMe : 0), 0);
   const burnRate = TODAY.getDate() > 0 ? member.monthlySpend / TODAY.getDate() : member.monthlySpend;
-  const completedTasks = displayTasks.filter((task) => task.completed).length;
+  const forecastedBurnRate = subscriptions.reduce((sum, sub) => {
+    switch (sub.frequency) {
+      case "Weekly": return sum + sub.amount * 4.33;
+      case "Monthly": return sum + sub.amount;
+      case "Quarterly": return sum + sub.amount / 3;
+      case "Yearly": return sum + sub.amount / 12;
+      default: return sum + sub.amount;
+    }
+  }, 0);
+  const completedTasks = displayTasks.filter((t) => t.completed).length;
   const completionRate = displayTasks.length > 0 ? Math.round((completedTasks / displayTasks.length) * 100) : 0;
+  
   const xpHeatmap = buildWeeklyHeatmap(14, member.xp + completedTasks * 6);
   const monthlyInflowHeatmap = buildMonthlyCalendarHeatmap("inflow", transactions);
   const monthlyOutflowHeatmap = buildMonthlyCalendarHeatmap("outflow", transactions);
   const trendSeries = buildTrendSeries(displayTasks, transactions);
   const comparisonSeries = buildFinancialComparisonSeries(transactions);
   const sortedTransactions = sortTransactions(transactions, sortKey, sortDirection);
+  
   const splitNames = actionForm.splitNames.filter((name) => name.trim().length > 0);
-  const splitParticipantCount =
-    actionForm.splitBill && Number(actionForm.amount) > 0
-      ? splitNames.length + (actionForm.amIncluded ? 1 : 0)
-      : 0;
-  const splitPerHead =
-    splitParticipantCount > 0 ? Number(actionForm.amount || 0) / splitParticipantCount : 0;
-  const liveSplitSummary =
-    actionForm.splitBill && Number(actionForm.amount) > 0
+  const splitParticipantCount = actionForm.splitBill && Number(actionForm.amount) > 0 ? splitNames.length + (actionForm.amIncluded ? 1 : 0) : 0;
+  const splitPerHead = splitParticipantCount > 0 ? Number(actionForm.amount || 0) / splitParticipantCount : 0;
+  const liveSplitSummary = actionForm.splitBill && Number(actionForm.amount) > 0
       ? `${splitParticipantCount} participants | ${formatCurrency(splitPerHead)} each`
       : "Enable split bill to calculate shares.";
-  const hasWorkspaceData =
-    tasks.length > 0 ||
-    habits.length > 0 ||
-    transactions.length > 0 ||
-    subscriptions.length > 0 ||
-    member.totalBalance > 0 ||
-    member.monthlySpend > 0 ||
-    member.monthlyEarned > 0 ||
-    member.xp > 0 ||
-    member.level > 1;
+
+  const hasWorkspaceData = tasks.length > 0 || habits.length > 0 || transactions.length > 0 || subscriptions.length > 0 || member.totalBalance > 0 || member.monthlySpend > 0 || member.monthlyEarned > 0 || member.xp > 0 || member.level > 1;
   const showNewUserBlankState = Boolean(currentUser) && syncState !== "syncing" && !hasWorkspaceData;
 
-  function pushToast(message: string) {
-    setToast({ id: Date.now(), message });
-  }
-
-  useEffect(() => {
-    if (!toast) {
-      return;
-    }
-    const timeout = window.setTimeout(() => {
-      setToast((current) => (current?.id === toast.id ? null : current));
-    }, 2600);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
-
-  function updateMemberAndPersist(nextMember: MemberProfile) {
-    setMember(nextMember);
-    if (currentUser && supabase) {
-      void saveMemberProfile(currentUser.id, nextMember);
-    }
-  }
-
-  function awardXp(points: number) {
-    setMember((current) => {
-      let nextLevel = current.level;
-      let nextGoal = current.xpGoal;
-      let nextXp = current.xp + points;
-
-      while (nextXp >= nextGoal) {
-        nextXp -= nextGoal;
-        nextLevel += 1;
-        nextGoal = calculateXpGoal(nextLevel);
-      }
-
-      const nextMember = { ...current, level: nextLevel, xp: nextXp, xpGoal: nextGoal };
-      if (currentUser && supabase) {
-        void saveMemberProfile(currentUser.id, nextMember);
-      }
-      return nextMember;
-    });
-  }
-
-  function updateBalances(transaction: TransactionItem) {
-    const inCurrentMonth = isDateInCurrentMonth(transaction.date);
-    setMember((current) => {
-      const delta = transaction.type === "Earn" ? transaction.amount : -transaction.amount;
-      const nextMember = {
-        ...current,
-        totalBalance: current.totalBalance + delta,
-        monthlySpend:
-          transaction.type === "Spend" && inCurrentMonth
-            ? current.monthlySpend + transaction.amount
-            : current.monthlySpend,
-        monthlyEarned:
-          transaction.type === "Earn" && inCurrentMonth
-            ? current.monthlyEarned + transaction.amount
-            : current.monthlyEarned
-      };
-      if (currentUser && supabase) {
-        void saveMemberProfile(currentUser.id, nextMember);
-      }
-      return nextMember;
-    });
-  }
-
-  async function loadDashboardFromSupabase(user: User) {
-    if (!supabase) {
-      return;
-    }
-
-    try {
-      const [profileResponse, taskResponse, habitResponse, transactionResponse, subscriptionResponse] =
-        await Promise.all([
-          supabase.from("member_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-          supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("habits").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
-          supabase
-            .from("transactions")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("transaction_date", { ascending: false }),
-          supabase
-            .from("subscriptions")
-            .select("*")
-            .eq("user_id", user.id)
-            .order("next_due_at", { ascending: true })
-        ]);
-
-      if (profileResponse.error && profileResponse.error.code !== "PGRST116") {
-        throw profileResponse.error;
-      }
-      if (taskResponse.error || habitResponse.error || transactionResponse.error || subscriptionResponse.error) {
-        throw taskResponse.error || habitResponse.error || transactionResponse.error || subscriptionResponse.error;
-      }
-
-      const remoteProfile = profileResponse.data as RemoteMemberRow | null;
-      const remoteTasks = ((taskResponse.data as RemoteTaskRow[]) ?? []).map((row) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        priority: row.priority,
-        xpValue: row.xp_value,
-        dueLabel: row.due_label,
-        completed: row.completed,
-        recurrenceType: row.recurrence_type ?? "once",
-        scheduledTime: row.scheduled_time ?? null,
-        lastCompletedOn: row.last_completed_on ?? null
-      }));
-      const remoteHabits = ((habitResponse.data as RemoteHabitRow[]) ?? []).map((row) => ({
-        id: row.id,
-        title: row.title,
-        iconKey: row.icon_key,
-        xpValue: row.xp_value,
-        completed: row.completed
-      }));
-      const remoteTransactions = ((transactionResponse.data as RemoteTransactionRow[]) ?? []).map((row) => ({
-        id: row.id,
-        date: row.transaction_date,
-        taskName: row.task_name,
-        category: row.category,
-        type: row.transaction_type,
-        amount: Number(row.amount),
-        splitStatus: row.split_status,
-        participants: row.participants ?? [],
-        owedToMe: Number(row.owed_to_me)
-      }));
-      const remoteSubscriptions = ((subscriptionResponse.data as RemoteSubscriptionRow[]) ?? []).map((row) => ({
-        id: row.id,
-        title: row.title,
-        amount: Number(row.amount),
-        frequency: row.frequency,
-        nextDueAt: row.next_due_at,
-        reminderMinutes: row.reminder_minutes
-      }));
-      const isFreshUser =
-        !remoteProfile &&
-        remoteTasks.length === 0 &&
-        remoteHabits.length === 0 &&
-        remoteTransactions.length === 0 &&
-        remoteSubscriptions.length === 0;
-
-      if (isFreshUser) {
-        const blankMember = buildBlankMember(user);
-        setMember(blankMember);
-        setTasks([]);
-        setHabits([]);
-        setTransactions([]);
-        setSubscriptions([]);
-        void saveMemberProfile(user.id, blankMember);
-      } else if (!remoteProfile) {
-        const seededMember = buildBlankMember(user);
-        setMember(seededMember);
-        void saveMemberProfile(user.id, seededMember);
-      } else {
-        setMember({
-          displayName: remoteProfile.display_name,
-          avatarUrl: remoteProfile.avatar_url,
-          level: remoteProfile.level,
-          xp: remoteProfile.xp,
-          xpGoal: remoteProfile.xp_goal,
-          totalBalance: Number(remoteProfile.total_balance),
-          monthlySpend: Number(remoteProfile.monthly_spend),
-          monthlyEarned: Number(remoteProfile.monthly_earned)
-        });
-      }
-
-      setTasks(remoteTasks);
-      setHabits(remoteHabits);
-      setTransactions(remoteTransactions);
-      setSubscriptions(remoteSubscriptions);
-
-      setSyncState("live");
-      pushToast(
-        isFreshUser
-          ? "Fresh workspace ready. Start with your first action."
-          : "Supabase sync live. Your dashboard is using member data."
-      );
-    } catch {
-      setSyncState("error");
-      pushToast("Supabase tables are not ready yet. Demo data remains active.");
-    }
-  }
-
-  async function saveMemberProfile(userId: string, nextMember: MemberProfile) {
-    if (!supabase) {
-      return null;
-    }
-    return supabase.from("member_profiles").upsert({
-      user_id: userId,
-      display_name: nextMember.displayName,
-      avatar_url: nextMember.avatarUrl,
-      level: nextMember.level,
-      xp: nextMember.xp,
-      xp_goal: nextMember.xpGoal,
-      total_balance: nextMember.totalBalance,
-      monthly_spend: nextMember.monthlySpend,
-      monthly_earned: nextMember.monthlyEarned
-    });
-  }
-
-  async function handleResetWorkspace() {
-    const shouldReset = window.confirm(
-      currentUser
-        ? "Reset your workspace? This will clear tasks, habits, transactions, subscriptions, balances, and XP."
-        : "Reset the local workspace view on this device?"
-    );
-
-    if (!shouldReset) {
-      return;
-    }
-
-    setIsSaving(true);
-
-    const blankMember = currentUser ? buildBlankMember(currentUser) : buildGuestMember();
-
-    try {
-      if (currentUser && supabase) {
-        const [taskResult, habitResult, transactionResult, subscriptionResult, memberResult] =
-          await Promise.all([
-            supabase.from("tasks").delete().eq("user_id", currentUser.id),
-            supabase.from("habits").delete().eq("user_id", currentUser.id),
-            supabase.from("transactions").delete().eq("user_id", currentUser.id),
-            supabase.from("subscriptions").delete().eq("user_id", currentUser.id),
-            saveMemberProfile(currentUser.id, blankMember)
-          ]);
-
-        const resetError =
-          taskResult.error ||
-          habitResult.error ||
-          transactionResult.error ||
-          subscriptionResult.error ||
-          memberResult?.error;
-
-        if (resetError) {
-          throw resetError;
-        }
-      } else {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-
-      setMember(blankMember);
-      setTasks([]);
-      setHabits([]);
-      setTransactions([]);
-      setSubscriptions([]);
-      setHabitBurstId(null);
-      setExportOpen(false);
-      setActiveView("command");
-      resetActionForm();
-      pushToast("Workspace reset. You are back to a fresh start.");
-    } catch {
-      pushToast("Workspace reset failed. Please try again in a moment.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function saveTask(userId: string, task: TaskItem) {
-    if (!supabase) {
-      return;
-    }
-    const basePayload = {
-      id: task.id,
-      user_id: userId,
-      title: task.title,
-      description: task.description,
-      priority: task.priority,
-      xp_value: task.xpValue,
-      due_label: task.dueLabel,
-      completed: task.completed
-    };
-
-    const { error } = await supabase.from("tasks").upsert({
-      ...basePayload,
-      recurrence_type: task.recurrenceType,
-      scheduled_time: task.scheduledTime,
-      last_completed_on: task.lastCompletedOn
-    });
-
-    if (!error) {
-      return;
-    }
-
-    const missingRecurrenceColumns =
-      error.message.includes("recurrence_type") ||
-      error.message.includes("scheduled_time") ||
-      error.message.includes("last_completed_on");
-
-    if (missingRecurrenceColumns) {
-      await supabase.from("tasks").upsert(basePayload);
-      pushToast("Run the SQL migration for daily tasks to sync recurring fields to Supabase.");
-    }
-  }
-
-  async function saveHabit(userId: string, habit: (typeof habits)[number]) {
-    if (!supabase) {
-      return;
-    }
-    await supabase.from("habits").upsert({
-      id: habit.id,
-      user_id: userId,
-      title: habit.title,
-      icon_key: habit.iconKey,
-      xp_value: habit.xpValue,
-      completed: habit.completed
-    });
-  }
-
-  async function saveTransaction(userId: string, transaction: TransactionItem) {
-    if (!supabase) {
-      return;
-    }
-    await supabase.from("transactions").upsert({
-      id: transaction.id,
-      user_id: userId,
-      transaction_date: transaction.date,
-      task_name: transaction.taskName,
-      category: transaction.category,
-      transaction_type: transaction.type,
-      amount: transaction.amount,
-      split_status: transaction.splitStatus,
-      participants: transaction.participants,
-      owed_to_me: transaction.owedToMe
-    });
-  }
-
-  async function saveSubscription(userId: string, subscription: SubscriptionItem) {
-    if (!supabase) {
-      return;
-    }
-    await supabase.from("subscriptions").upsert({
-      id: subscription.id,
-      user_id: userId,
-      title: subscription.title,
-      amount: subscription.amount,
-      frequency: subscription.frequency,
-      next_due_at: subscription.nextDueAt,
-      reminder_minutes: subscription.reminderMinutes
-    });
-  }
-
-  async function handleGoogleAuth() {
-    if (!supabase) {
-      pushToast("Add your Supabase env keys to enable Google login.");
-      return;
-    }
-
-    setSyncState("syncing");
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin }
-    });
-
-    if (error) {
-      setSyncState("error");
-      pushToast("Google sign-in could not start. Check Supabase auth settings.");
-    }
-  }
-
-  async function handleSignOut() {
-    if (!supabase) {
-      return;
-    }
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      pushToast("Sign-out failed. Session remains active.");
-      return;
-    }
-    setMember(DEFAULT_MEMBER);
-    setTasks(DEFAULT_TASKS);
-    setHabits(DEFAULT_HABITS);
-    setTransactions(DEFAULT_TRANSACTIONS);
-    setSubscriptions(DEFAULT_SUBSCRIPTIONS);
-    setSyncState("demo");
-    pushToast("Signed out. Demo cache is still available locally.");
-  }
-
-  function handleCompleteTask(taskId: string) {
-    const targetTask = tasks.find((task) => task.id === taskId);
-    if (!targetTask || isTaskCompletedForToday(targetTask)) {
-      return;
-    }
-
-    const nextTask =
-      targetTask.recurrenceType === "daily"
-        ? { ...targetTask, lastCompletedOn: getTodayIsoDate() }
-        : { ...targetTask, completed: true };
-    setTasks((current) => current.map((task) => (task.id === taskId ? nextTask : task)));
-    awardXp(targetTask.xpValue);
-    pushToast(`${targetTask.title} completed. +${targetTask.xpValue} XP`);
-    if (currentUser) {
-      void saveTask(currentUser.id, nextTask);
-    }
-  }
-
-  function handleCompleteHabit(habitId: string) {
-    const targetHabit = habits.find((habit) => habit.id === habitId);
-    if (!targetHabit || targetHabit.completed) {
-      return;
-    }
-
-    const nextHabit = { ...targetHabit, completed: true };
-    setHabits((current) => current.map((habit) => (habit.id === habitId ? nextHabit : habit)));
-    awardXp(targetHabit.xpValue);
-    setHabitBurstId(habitId);
-    window.setTimeout(() => setHabitBurstId((current) => (current === habitId ? null : current)), 900);
-    pushToast(`${targetHabit.title} locked in. +${targetHabit.xpValue} XP`);
-    if (currentUser) {
-      void saveHabit(currentUser.id, nextHabit);
-    }
-  }
-
-  function resetActionForm() {
-    setActionForm(buildInitialActionForm());
-  }
-
-  async function commitAction() {
-    if (!actionForm.title.trim()) {
-      pushToast("Action title is required before you commit.");
-      return;
-    }
-    if (actionForm.involvesTransaction && (!actionForm.amount || Number(actionForm.amount) <= 0)) {
-      pushToast("Enter a valid transaction amount to unlock the finance engine.");
-      return;
-    }
-    if (actionForm.splitBill && splitNames.length === 0) {
-      pushToast("Add at least one name when a bill is being split.");
-      return;
-    }
-
-    setIsSaving(true);
-
-    const task: TaskItem = {
-      id: crypto.randomUUID(),
-      title: actionForm.title.trim(),
-      description: actionForm.description.trim() || "Freshly forged action ready for execution.",
-      priority: actionForm.priority,
-      xpValue: actionForm.priority === "Low" ? 10 : actionForm.priority === "Medium" ? 20 : actionForm.priority === "High" ? 30 : 50,
-      dueLabel: actionForm.repeatsDaily ? "Daily" : `Created | ${TODAY_LABEL}`,
-      completed: false,
-      recurrenceType: actionForm.repeatsDaily ? "daily" : "once",
-      scheduledTime: actionForm.repeatsDaily ? actionForm.dailyTime : null,
-      lastCompletedOn: null
-    };
-
-    setTasks((current) => [task, ...current]);
-    if (currentUser) {
-      void saveTask(currentUser.id, task);
-    }
-
-    if (actionForm.involvesTransaction) {
-      const owedToMe =
-        actionForm.transactionType === "Spend" && actionForm.splitBill
-          ? actionForm.amIncluded
-            ? splitPerHead * splitNames.length
-            : Number(actionForm.amount)
-          : 0;
-
-      const transaction: TransactionItem = {
-        id: crypto.randomUUID(),
-        date: new Date().toISOString().slice(0, 10),
-        taskName: actionForm.title.trim(),
-        category: actionForm.category,
-        type: actionForm.transactionType,
-        amount: Number(actionForm.amount),
-        splitStatus: actionForm.splitBill ? "Pending" : "Solo",
-        participants: splitNames,
-        owedToMe
-      };
-
-      setTransactions((current) => [transaction, ...current]);
-      updateBalances(transaction);
-      if (currentUser) {
-        void saveTransaction(currentUser.id, transaction);
-      }
-    }
-
-    if (actionForm.createSubscription) {
-      const subscription: SubscriptionItem = {
-        id: crypto.randomUUID(),
-        title: actionForm.title.trim(),
-        amount: Number(actionForm.amount || 0),
-        frequency: actionForm.subscriptionFrequency,
-        nextDueAt: new Date(actionForm.nextDueAt).toISOString(),
-        reminderMinutes: actionForm.reminderHours * 60
-      };
-
-      setSubscriptions((current) =>
-        [...current, subscription].sort(
-          (left, right) => new Date(left.nextDueAt).getTime() - new Date(right.nextDueAt).getTime()
-        )
-      );
-      if (currentUser) {
-        void saveSubscription(currentUser.id, subscription);
-      }
-    }
-
-    setIsSaving(false);
-    setIsModalOpen(false);
-    resetActionForm();
-    pushToast("Action committed. The board, wealth, and reminders are updated.");
-  }
-
-  function handleSort(nextKey: SortKey) {
-    if (sortKey === nextKey) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(nextKey);
-    setSortDirection("desc");
-  }
-
   function exportLedger(mode: "full" | "tax") {
-    const filtered =
-      mode === "full"
-        ? transactions
-        : transactions.filter((transaction) => isWithinIndianTaxYear(transaction.date, TODAY));
-
+    const filtered = mode === "full" ? transactions : transactions.filter((t) => isWithinIndianTaxYear(t.date, TODAY));
     const csvRows = [
       ["Date", "Task Name", "Category", "Type", "Amount", "Split Status", "Participants", "Owed To Me"].join(","),
-      ...filtered.map((transaction) =>
-        [
-          transaction.date,
-          escapeCsv(transaction.taskName),
-          escapeCsv(transaction.category),
-          transaction.type,
-          transaction.amount.toFixed(2),
-          transaction.splitStatus,
-          escapeCsv(transaction.participants.join(" | ")),
-          transaction.owedToMe.toFixed(2)
-        ].join(",")
+      ...filtered.map((t) =>
+        [t.date, escapeCsv(t.taskName), escapeCsv(t.category), t.type, t.amount.toFixed(2), t.splitStatus, escapeCsv(t.participants.join(" | ")), t.owedToMe.toFixed(2)].join(",")
       )
     ];
-
     const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
-    anchor.download =
-      mode === "full" ? "life-os-ledger.csv" : `life-os-tax-report-${formatIndianTaxYear(TODAY)}.csv`;
+    anchor.download = mode === "full" ? "life-os-ledger.csv" : `life-os-tax-report-${formatIndianTaxYear(TODAY)}.csv`;
     document.body.append(anchor);
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(href);
-    setExportOpen(false);
-    pushToast(mode === "full" ? "Full ledger CSV ready." : "Tax year report downloaded.");
-  }
-
-  if (!hasEntered) {
-    return <MotionLanding onEnter={() => setHasEntered(true)} />;
+    store.setExportOpen(false);
+    store.pushToast(mode === "full" ? "Full ledger CSV ready." : "Tax year report downloaded.");
   }
 
   return (
@@ -833,59 +207,39 @@ function App() {
           <nav className="space-y-2">
             {VIEWS.map((view) => {
               const Icon = view.icon;
-              const active = activeView === view.key;
+              const active = location.pathname.includes(view.key);
               return (
-                <button
+                <NavLink
                   key={view.key}
-                  type="button"
+                  to={`/${view.key}`}
                   aria-current={active ? "page" : undefined}
-                  onClick={() => setActiveView(view.key)}
-                  className={`relative flex w-full items-center justify-between rounded-[4px] border px-4 py-3 text-left transition ${
+                  className={`relative flex w-full items-center justify-between rounded-[4px] border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/50 ${
                     active
                       ? "border-[#D4AF37]/30 bg-[#D4AF37]/8 text-[#dce3f0] nav-gold-glow"
                       : "border-[#D4AF37]/8 bg-[#192029] text-[#d0c5af] hover:border-[#D4AF37]/20 hover:bg-[#232a34]"
                   }`}
+                  aria-label={view.label}
                 >
                   <div className="flex items-center gap-3">
-                    <span
-                      className={`rounded-[4px] p-2 ${
-                        active ? "bg-[#D4AF37]/15 text-[#D4AF37]" : "bg-[#232a34] text-[#99907c]"
-                      }`}
-                    >
+                    <span className={`rounded-[4px] p-2 ${active ? "bg-[#D4AF37]/15 text-[#D4AF37]" : "bg-[#232a34] text-[#99907c]"}`}>
                       <Icon className="h-4 w-4" />
                     </span>
                     <div>
                       <p className="font-medium">{view.label}</p>
                       <p className="mt-1 text-xs text-[#99907c]">
-                        {view.key === "command"
-                          ? "Focus, tasks, rituals"
-                          : view.key === "wealth"
-                            ? "Transactions and splits"
-                            : "XP + finance heatmaps"}
+                        {view.key === "command" ? "Focus, tasks, rituals" : view.key === "wealth" ? "Transactions and splits" : "XP + finance heatmaps"}
                       </p>
                     </div>
                   </div>
                   <Check className={`h-4 w-4 ${active ? "text-[#D4AF37]" : "text-transparent"}`} />
-                </button>
+                </NavLink>
               );
             })}
           </nav>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <MetricCard
-              title="Streak health"
-              value={`${habits.filter((habit) => habit.completed).length}/${habits.length}`}
-              sublabel="routines locked today"
-              icon={Target}
-              tone="amber"
-            />
-            <MetricCard
-              title="Pending splits"
-              value={formatCurrency(totalOwedToMe)}
-              sublabel="owed back to you"
-              icon={Users}
-              tone="emerald"
-            />
+            <MetricCard title="Streak health" value={<><AnimatedNumber value={habits.filter((h) => h.completed).length} />/{habits.length}</>} sublabel="routines locked today" icon={Target} tone="amber" />
+            <MetricCard title="Pending splits" value={<AnimatedNumber value={totalOwedToMe} prefix="₹" decimals={2} />} sublabel="owed back to you" icon={Users} tone="emerald" />
           </div>
 
           <div className="mt-auto space-y-3 pt-6">
@@ -893,28 +247,16 @@ function App() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Google Login</p>
-                  <p className="mt-2 text-sm text-[#d0c5af]">
-                    Connect Supabase auth to sync your member balances and activity stream.
-                  </p>
+                  <p className="mt-2 text-sm text-[#d0c5af]">Connect Supabase auth to sync your member balances.</p>
                 </div>
                 <Database className="mt-0.5 h-5 w-5 text-[#D4AF37]" />
               </div>
               <button
                 type="button"
-                onClick={currentUser ? handleSignOut : handleGoogleAuth}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3 text-sm font-medium text-[#dce3f0] transition hover:border-[#D4AF37]/35 hover:bg-[#D4AF37]/12"
+                onClick={currentUser ? actions.handleSignOut : actions.handleGoogleAuth}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3 text-sm font-medium text-[#dce3f0] transition hover:border-[#D4AF37]/35 hover:bg-[#D4AF37]/12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/50"
               >
-                {currentUser ? (
-                  <>
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="h-4 w-4" />
-                    Connect with Google
-                  </>
-                )}
+                {currentUser ? <><LogOut className="h-4 w-4" /> Sign out</> : <><LogIn className="h-4 w-4" /> Connect with Google</>}
               </button>
             </div>
 
@@ -922,74 +264,53 @@ function App() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Workspace Reset</p>
-                  <p className="mt-2 text-sm text-[#d0c5af]">
-                    Clear tasks, habits, ledger entries, subscriptions, and return to a clean slate.
-                  </p>
                 </div>
                 <RefreshCcw className="mt-0.5 h-5 w-5 text-[#99907c]" />
               </div>
               <button
                 type="button"
-                onClick={handleResetWorkspace}
+                onClick={actions.handleResetWorkspace}
                 disabled={isSaving}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#7a2020]/30 bg-[#7a2020]/10 px-4 py-3 text-sm font-medium text-[#f87171]/80 transition hover:bg-[#7a2020]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#7a2020]/30 bg-[#7a2020]/10 px-4 py-3 text-sm font-medium text-[#f87171]/80 transition hover:bg-[#7a2020]/20 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50"
               >
                 <RefreshCcw className={`h-4 w-4 ${isSaving ? "animate-spin" : ""}`} />
-                {isSaving ? "Resetting workspace..." : "Reset workspace"}
+                {isSaving ? "Resetting..." : "Reset workspace"}
               </button>
             </div>
           </div>
         </aside>
 
         <main className="flex-1 overflow-hidden rounded-[8px]">
-          <Suspense fallback={<SectionFallback />}>
-            {showNewUserBlankState ? (
-              <NewUserBlankState
-                displayName={member.displayName}
-                onCreateAction={() => setIsModalOpen(true)}
-                onOpenWealthLedger={() => setActiveView("wealth")}
-              />
-            ) : activeView === "command" ? (
-              <CommandCenter
-                member={member}
-                tasks={displayTasks}
-                habits={habits}
-                subscriptions={subscriptions}
-                completionRate={completionRate}
-                habitBurstId={habitBurstId}
-                onCompleteTask={handleCompleteTask}
-                onCompleteHabit={handleCompleteHabit}
-              />
-            ) : activeView === "wealth" ? (
-              <WealthLedger
-                member={member}
-                burnRate={burnRate}
-                totalOwedToMe={totalOwedToMe}
-                transactions={sortedTransactions}
-                exportOpen={exportOpen}
-                sortKey={sortKey}
-                sortDirection={sortDirection}
-                onToggleExport={() => setExportOpen((current) => !current)}
-                onSort={handleSort}
-                onExport={exportLedger}
-              />
-            ) : (
-              <AnalyticsHub
-                xpHeatmap={xpHeatmap}
-                inflowHeatmap={monthlyInflowHeatmap}
-                outflowHeatmap={monthlyOutflowHeatmap}
-                trendSeries={trendSeries}
-                comparisonSeries={comparisonSeries}
-              />
-            )}
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<SectionFallback />}>
+              {syncState === "syncing" ? (
+                <SkeletonLoader />
+              ) : showNewUserBlankState ? (
+                <NewUserBlankState
+                  displayName={member.displayName}
+                  onCreateAction={() => store.setIsModalOpen(true)}
+                  onOpenWealthLedger={() => navigate("/wealth")}
+                />
+              ) : (
+                <AnimatePresence mode="wait">
+                  <Routes location={location} key={location.pathname}>
+                    <Route path="/command" element={<PageTransition><CommandCenter member={member} tasks={displayTasks} habits={habits} subscriptions={subscriptions} completionRate={completionRate} habitBurstId={habitBurstId} onCompleteTask={actions.handleCompleteTask} onCompleteHabit={actions.handleCompleteHabit} /></PageTransition>} />
+                    <Route path="/wealth" element={<PageTransition><WealthLedger member={member} burnRate={burnRate} forecastedBurnRate={forecastedBurnRate} totalOwedToMe={totalOwedToMe} transactions={sortedTransactions} exportOpen={exportOpen} sortKey={sortKey} sortDirection={sortDirection} onToggleExport={() => store.setExportOpen(!exportOpen)} onSort={(k) => store.sortKey === k ? store.setSortDirection(store.sortDirection === "asc" ? "desc" : "asc") : (store.setSortKey(k), store.setSortDirection("desc"))} onExport={exportLedger} /></PageTransition>} />
+                    <Route path="/analytics" element={<PageTransition><AnalyticsHub xpHeatmap={xpHeatmap} inflowHeatmap={monthlyInflowHeatmap} outflowHeatmap={monthlyOutflowHeatmap} trendSeries={trendSeries} comparisonSeries={comparisonSeries} /></PageTransition>} />
+                    <Route path="*" element={<Navigate to="/command" replace />} />
+                  </Routes>
+                </AnimatePresence>
+              )}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 
       <button
         type="button"
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-3 rounded-[4px] bg-[#D4AF37] px-5 py-4 text-sm font-bold text-[#0d141d] transition hover:bg-[#f2ca50]"
+        aria-label="Open Action Forge"
+        onClick={() => store.setIsModalOpen(true)}
+        className="fixed bottom-6 right-6 z-30 inline-flex items-center gap-3 rounded-[4px] bg-[#D4AF37] px-5 py-4 text-sm font-bold text-[#0d141d] transition hover:bg-[#f2ca50] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         style={{ boxShadow: "0 0 40px rgba(212,175,55,0.30), 0 16px 48px rgba(0,0,0,0.5)" }}
       >
         <Plus className="h-5 w-5" />
@@ -1004,97 +325,48 @@ function App() {
             splitNames={splitNames}
             liveSplitSummary={liveSplitSummary}
             splitPerHead={splitPerHead}
-            onClose={() => {
-              setIsModalOpen(false);
-              resetActionForm();
-            }}
-            onFormChange={setActionForm}
-            onCommit={commitAction}
+            onClose={() => { store.setIsModalOpen(false); store.resetActionForm(); }}
+            onFormChange={store.setActionForm}
+            onCommit={() => actions.commitAction(splitNames, splitPerHead)}
           />
         </Suspense>
       ) : null}
 
-      {toast ? (
-        <div className="fixed left-1/2 top-6 z-40 -translate-x-1/2 rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm text-slate-100 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-          {toast.message}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function getDisplayName(user: User) {
-  return (
-    (user.user_metadata.full_name as string | undefined) ||
-    (user.user_metadata.name as string | undefined) ||
-    user.email?.split("@")[0] ||
-    "Life OS User"
-  );
-}
-
-function getAvatarUrl(user: User) {
-  return (
-    (user.user_metadata.avatar_url as string | undefined) ||
-    (user.user_metadata.picture as string | undefined) ||
-    null
-  );
-}
-
-function getTodayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isTaskCompletedForToday(task: TaskItem) {
-  return task.recurrenceType === "daily" ? task.lastCompletedOn === getTodayIsoDate() : task.completed;
-}
-
-function getTaskDisplayDueLabel(task: TaskItem) {
-  if (task.recurrenceType !== "daily") {
-    return task.dueLabel;
-  }
-
-  if (!task.scheduledTime) {
-    return "Daily";
-  }
-
-  const [hours, minutes] = task.scheduledTime.split(":").map(Number);
-  const time = new Date();
-  time.setHours(hours, minutes, 0, 0);
-  return `Daily | ${time.toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit"
-  })}`;
-}
-
-function buildBlankMember(user: User): MemberProfile {
-  return buildPristineMember(getDisplayName(user), getAvatarUrl(user));
-}
-
-function buildGuestMember(): MemberProfile {
-  return buildPristineMember("Life OS User", null);
-}
-
-function buildPristineMember(displayName: string, avatarUrl: string | null): MemberProfile {
-  return {
-    displayName,
-    avatarUrl,
-    level: 1,
-    xp: 0,
-    xpGoal: 100,
-    totalBalance: 0,
-    monthlySpend: 0,
-    monthlyEarned: 0
-  };
-}
-
-function SectionFallback() {
-  return (
-    <div className="glass-panel flex min-h-[calc(100vh-2rem)] items-center justify-center rounded-[8px] p-6">
-      <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-sm text-[#D4AF37]">
-        Loading view...
+      <div className="fixed left-1/2 top-6 z-40 flex -translate-x-1/2 flex-col gap-2">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="rounded-full border border-white/10 bg-slate-950/80 px-4 py-2 text-sm text-slate-100 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl animate-in slide-in-from-top-4 fade-in duration-300">
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  const store = useAppStore();
+  if (!store.hasEntered) {
+    return <MotionLanding onEnter={() => store.setHasEntered(true)} />;
+  }
+  if (!store.hasAcceptedDisclaimer) {
+    return <DisclaimerView onAccept={() => store.setHasAcceptedDisclaimer(true)} />;
+  }
+  if (!store.aiProfile) {
+    return (
+      <AIProfileForm
+        onComplete={(profile) => {
+          store.setAiProfile(profile);
+          const bal = parseFloat(profile.initialBalance);
+          if (bal > 0) {
+            store.setMember((m) => ({ ...m, totalBalance: bal }));
+          }
+        }}
+      />
+    );
+  }
+  return (
+    <BrowserRouter>
+      <MainAppLayout />
+    </BrowserRouter>
+  );
+}

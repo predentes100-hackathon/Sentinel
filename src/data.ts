@@ -270,10 +270,10 @@ export const DEFAULT_TASKS: TaskItem[] = [
 ];
 
 export const DEFAULT_HABITS: HabitItem[] = [
-  { id: "habit-1", title: "Surya Namaskar", iconKey: "surya", xpValue: 15, completed: true },
-  { id: "habit-2", title: "Table Tennis footwork", iconKey: "footwork", xpValue: 20, completed: false },
-  { id: "habit-3", title: "Read 10 pages", iconKey: "read", xpValue: 10, completed: false },
-  { id: "habit-4", title: "Hydration checkpoint", iconKey: "hydrate", xpValue: 10, completed: false }
+  { id: "habit-1", title: "Surya Namaskar", iconKey: "surya", xpValue: 15, completed: true, streakCount: 0 },
+  { id: "habit-2", title: "Table Tennis footwork", iconKey: "footwork", xpValue: 20, completed: false, streakCount: 0 },
+  { id: "habit-3", title: "Read 10 pages", iconKey: "read", xpValue: 10, completed: false, streakCount: 0 },
+  { id: "habit-4", title: "Hydration checkpoint", iconKey: "hydrate", xpValue: 10, completed: false, streakCount: 0 }
 ];
 
 export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
@@ -285,8 +285,9 @@ export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
     type: "Spend",
     amount: 800,
     splitStatus: "Pending",
-    participants: ["Anshul"],
-    owedToMe: 400
+    participants: ["Aman", "Rohan"],
+    owedToMe: 10000,
+    tags: ["bali", "trip"]
   },
   {
     id: "txn-2",
@@ -294,10 +295,11 @@ export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
     taskName: "Bought SSD for dev rig",
     category: "Shopping (non-essential)",
     type: "Spend",
-    amount: 2000,
+    amount: 12000,
     splitStatus: "Solo",
     participants: [],
-    owedToMe: 0
+    owedToMe: 0,
+    tags: ["tech"]
   },
   {
     id: "txn-3",
@@ -305,10 +307,11 @@ export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
     taskName: "Freelance sprint payout",
     category: "Investments",
     type: "Earn",
-    amount: 7500,
+    amount: 25000,
     splitStatus: "Solo",
     participants: [],
-    owedToMe: 0
+    owedToMe: 0,
+    tags: ["stocks"]
   },
   {
     id: "txn-4",
@@ -316,10 +319,11 @@ export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
     taskName: "Dinner after practice",
     category: "Dining out & takeaway",
     type: "Spend",
-    amount: 650,
+    amount: 3200,
     splitStatus: "Pending",
-    participants: ["Nihali"],
-    owedToMe: 325
+    participants: ["Kavya"],
+    owedToMe: 1600,
+    tags: ["dinner"]
   },
   {
     id: "txn-5",
@@ -327,10 +331,11 @@ export const DEFAULT_TRANSACTIONS: TransactionItem[] = [
     taskName: "Cloud architecture course",
     category: "Education & courses",
     type: "Spend",
-    amount: 1499,
+    amount: 500,
     splitStatus: "Solo",
     participants: [],
-    owedToMe: 0
+    owedToMe: 0,
+    tags: ["course"]
   }
 ];
 
@@ -404,7 +409,8 @@ export function buildInitialActionForm(): ActionFormState {
     createSubscription: false,
     subscriptionFrequency: "Monthly",
     nextDueAt: toLocalDateTimeInput(offsetDateTime(7, 9)),
-    reminderHours: 24
+    reminderHours: 24,
+    tags: ""
   };
 }
 
@@ -604,4 +610,38 @@ export function toLocalDateTimeInput(value: string) {
   const timezoneOffset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - timezoneOffset * 60_000);
   return local.toISOString().slice(0, 16);
+}
+
+export function getMemberAchievements(member: import("./types").MemberProfile, habits: import("./types").HabitItem[]): import("./types").Achievement[] {
+  const maxStreak = habits.reduce((max, h) => Math.max(max, h.streakCount), 0);
+  return [
+    {
+      id: "ach-1",
+      title: "First Steps",
+      description: "Reach Level 2",
+      iconName: "Star",
+      unlocked: member.level >= 2
+    },
+    {
+      id: "ach-2",
+      title: "Consistent Operator",
+      description: "Achieve a 3-day streak",
+      iconName: "Zap",
+      unlocked: maxStreak >= 3
+    },
+    {
+      id: "ach-3",
+      title: "Wealth Builder",
+      description: "Accumulate ₹50,000",
+      iconName: "Shield",
+      unlocked: member.totalBalance >= 50000
+    },
+    {
+      id: "ach-4",
+      title: "Centurion",
+      description: "Reach Level 5",
+      iconName: "Crown",
+      unlocked: member.level >= 5
+    }
+  ];
 }

@@ -1,13 +1,15 @@
 import { ArrowDownRight, ArrowUpRight, Users, Wallet } from "lucide-react";
 import { CATEGORY_META, formatCurrency, formatDate } from "../data";
-import { ExportMenuToggle, MetricCard, SortButton } from "../components/shared";
+import { ExportMenuToggle, MetricCard, SortButton, StaggeredList, StaggeredItem } from "../components/shared";
+import { EmptyState } from "../components/EmptyState";
+import { AnimatedNumber } from "../components/AnimatedNumber";
 import type { MemberProfile, SortDirection, SortKey, TransactionItem } from "../types";
 
 export function WealthLedger({
-  member, burnRate, totalOwedToMe, transactions, exportOpen,
+  member, burnRate, forecastedBurnRate, totalOwedToMe, transactions, exportOpen,
   sortKey, sortDirection, onToggleExport, onSort, onExport
 }: {
-  member: MemberProfile; burnRate: number; totalOwedToMe: number;
+  member: MemberProfile; burnRate: number; forecastedBurnRate: number; totalOwedToMe: number;
   transactions: TransactionItem[]; exportOpen: boolean;
   sortKey: SortKey; sortDirection: SortDirection;
   onToggleExport: () => void; onSort: (key: SortKey) => void;
@@ -43,12 +45,14 @@ export function WealthLedger({
           </div>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-3">
-          <MetricCard title="Total Liquid Assets" value={formatCurrency(member.totalBalance)}
+        <div className="grid gap-4 xl:grid-cols-4">
+          <MetricCard title="Total Liquid Assets" value={<AnimatedNumber value={member.totalBalance} prefix="₹" decimals={2} />}
             sublabel="cash + liquid reserves" icon={Wallet} tone="gold" />
-          <MetricCard title="This Month's Burn Rate" value={`${formatCurrency(burnRate)}/day`}
+          <MetricCard title="This Month's Burn Rate" value={<><AnimatedNumber value={burnRate} prefix="₹" decimals={2} />/day</>}
             sublabel="average outflow cadence" icon={ArrowDownRight} tone="amber" />
-          <MetricCard title="Owed to Me" value={formatCurrency(totalOwedToMe)}
+          <MetricCard title="Next Month Forecast" value={<AnimatedNumber value={forecastedBurnRate} prefix="₹" decimals={2} />}
+            sublabel="based on active subs" icon={ArrowUpRight} tone="fuchsia" />
+          <MetricCard title="Owed to Me" value={<AnimatedNumber value={totalOwedToMe} prefix="₹" decimals={2} />}
             sublabel="pending split recovery" icon={Users} tone="emerald" />
         </div>
 
@@ -62,40 +66,62 @@ export function WealthLedger({
           </div>
 
           <div className="max-h-[620px] overflow-auto">
-            {transactions.map((tx) => {
-              const meta = CATEGORY_META[tx.category];
-              const Icon = meta.icon;
-              return (
-                <div key={tx.id}
-                  className="grid grid-cols-1 gap-4 border-b border-[#D4AF37]/8 px-4 py-4 transition hover:bg-[#232a34] sm:px-6 lg:grid-cols-[1.15fr_1fr_1fr_0.9fr_0.95fr]">
-                  <div className="text-sm text-[#d0c5af]">{formatDate(tx.date)}</div>
-                  <div>
-                    <p className="font-medium text-[#dce3f0]">{tx.taskName}</p>
-                    {tx.participants.length > 0 ? (
-                      <p className="mt-1 text-xs text-[#99907c]">Split with {tx.participants.join(", ")}</p>
-                    ) : null}
+            {transactions.length === 0 ? (
+              <EmptyState
+                icon={Wallet}
+                title="No transactions recorded"
+                description="Your ledger is currently empty. Actions involving finances will appear here."
+              />
+            ) : (
+              <StaggeredList className="flex flex-col">
+                {transactions.map((tx) => {
+                  const meta = CATEGORY_META[tx.category];
+                  const Icon = meta.icon;
+                  return (
+                    <StaggeredItem key={tx.id}>
+                      <div
+                        className="grid grid-cols-1 gap-4 border-b border-[#D4AF37]/8 px-4 py-4 transition hover:bg-[#232a34] sm:px-6 lg:grid-cols-[1.15fr_1fr_1fr_0.9fr_0.95fr]"
+                      >
+                    <div className="text-sm text-[#d0c5af]">{formatDate(tx.date)}</div>
+                    <div>
+                      <p className="font-medium text-[#dce3f0]">{tx.taskName}</p>
+                      {tx.participants.length > 0 ? (
+                        <p className="mt-1 text-xs text-[#99907c]">Split with {tx.participants.join(", ")}</p>
+                      ) : null}
+                      {tx.tags && tx.tags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {tx.tags.map(tag => (
+                            <span key={tag} className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-2 py-0.5 text-[10px] uppercase tracking-widest text-[#D4AF37]">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`rounded-[4px] p-2 ${meta.className}`}><Icon className="h-4 w-4" /></span>
+                      <span className="text-sm text-[#d0c5af]">{tx.category}</span>
+                    </div>
+                    <div className={`text-sm font-semibold ${tx.type === "Earn" ? "text-[#D4AF37]" : "text-[#c0392b]/80"}`}>
+                      {tx.type === "Earn" ? "+" : "-"}{formatCurrency(tx.amount)}
+                    </div>
+                    <div className="flex items-center justify-start lg:justify-end">
+                      <span className={`inline-flex rounded-[2px] border px-3 py-1 text-xs font-medium ${
+                        tx.splitStatus === "Pending"
+                          ? "border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]"
+                          : tx.splitStatus === "Settled"
+                            ? "border-[#2d4a3e]/60 bg-[#1a3a2e]/60 text-[#6ee7b7]"
+                            : "border-[#4d4635] bg-[#080f17] text-[#d0c5af]"
+                      }`}>
+                        {tx.splitStatus}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`rounded-[4px] p-2 ${meta.className}`}><Icon className="h-4 w-4" /></span>
-                    <span className="text-sm text-[#d0c5af]">{tx.category}</span>
-                  </div>
-                  <div className={`text-sm font-semibold ${tx.type === "Earn" ? "text-[#D4AF37]" : "text-[#c0392b]/80"}`}>
-                    {tx.type === "Earn" ? "+" : "-"}{formatCurrency(tx.amount)}
-                  </div>
-                  <div className="flex items-center justify-start lg:justify-end">
-                    <span className={`inline-flex rounded-[2px] border px-3 py-1 text-xs font-medium ${
-                      tx.splitStatus === "Pending"
-                        ? "border-[#D4AF37]/25 bg-[#D4AF37]/10 text-[#D4AF37]"
-                        : tx.splitStatus === "Settled"
-                          ? "border-[#2d4a3e]/60 bg-[#1a3a2e]/60 text-[#6ee7b7]"
-                          : "border-[#4d4635] bg-[#080f17] text-[#d0c5af]"
-                    }`}>
-                      {tx.splitStatus}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                </StaggeredItem>
+                  );
+                })}
+              </StaggeredList>
+            )}
           </div>
         </div>
       </div>

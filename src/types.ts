@@ -38,6 +38,7 @@ export type HabitItem = {
   iconKey: HabitIconKey;
   xpValue: number;
   completed: boolean;
+  streakCount: number;
 };
 
 export type SubscriptionFrequency = "Weekly" | "Monthly" | "Quarterly" | "Yearly";
@@ -76,6 +77,7 @@ export type TransactionItem = {
   splitStatus: "Solo" | "Pending" | "Settled";
   participants: string[];
   owedToMe: number;
+  tags: string[];
 };
 
 export type SubscriptionItem = {
@@ -128,4 +130,20 @@ export type ActionFormState = {
   subscriptionFrequency: SubscriptionFrequency;
   nextDueAt: string;
   reminderHours: number;
+  tags: string;
+};
+
+export type Achievement = {
+  id: string;
+  title: string;
+  description: string;
+  iconName: "Shield" | "Swords" | "Crown" | "Star" | "Zap";
+  unlocked: boolean;
+};
+
+export type AIProfileState = {
+  age: string;
+  profession: string;
+  goals: string;
+  initialBalance: string;
 };

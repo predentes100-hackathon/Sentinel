@@ -1,6 +1,9 @@
-import { Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Plus, X, Sparkles, Loader2 } from "lucide-react";
 import { FINANCE_CATEGORIES, PRIORITY_META, formatCurrency } from "../data";
 import { Field, Toggle } from "../components/shared";
+import { useAppStore } from "../store";
+import { generateActionSuggestions, type AISuggestion } from "../lib/gemini";
 import type { ActionFormState, FinanceCategory, SubscriptionItem, TransactionType } from "../types";
 
 export function ActionForgeModal({
@@ -13,6 +16,10 @@ export function ActionForgeModal({
   onFormChange: (updater: ActionFormState | ((current: ActionFormState) => ActionFormState)) => void;
   onCommit: () => void;
 }) {
+  const store = useAppStore();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+
   function update<K extends keyof ActionFormState>(key: K, value: ActionFormState[K]) {
     onFormChange((current) => ({ ...current, [key]: value }));
   }
@@ -33,6 +40,30 @@ export function ActionForgeModal({
       ...current,
       splitNames: current.splitNames.filter((_, i) => i !== index)
     }));
+  }
+
+  async function handleGenerate() {
+    if (!store.aiProfile) return;
+    setIsGenerating(true);
+    try {
+      const results = await generateActionSuggestions(store.aiProfile);
+      setSuggestions(results);
+    } catch (err: any) {
+      console.error(err);
+      alert("AI Error: " + (err.message || "Failed to generate AI ideas."));
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  function applySuggestion(suggestion: AISuggestion) {
+    onFormChange((current) => ({
+      ...current,
+      title: suggestion.title,
+      description: suggestion.description,
+      priority: suggestion.priority
+    }));
+    setSuggestions([]);
   }
 
   const inputClass = "w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-4 text-[#dce3f0] outline-none transition placeholder:text-[#99907c] focus:border-[#D4AF37]/50 focus:ring-0";
@@ -56,15 +87,52 @@ export function ActionForgeModal({
               Title it, gamify it, wire the money flow, and optionally attach a subscription reminder.
             </p>
           </div>
-          <button
-            type="button"
-            aria-label="Close Action Forge"
-            onClick={onClose}
-            className="rounded-[4px] border border-[#D4AF37]/20 bg-[#232a34] p-3 text-[#d0c5af] transition hover:border-[#D4AF37]/40 hover:text-[#D4AF37]"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isGenerating || !store.aiProfile}
+              className="inline-flex items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/10 px-4 py-2 text-sm font-medium text-[#D4AF37] transition hover:bg-[#D4AF37]/20 disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Generate AI Ideas
+            </button>
+            <button
+              type="button"
+              aria-label="Close Action Forge"
+              onClick={onClose}
+              className="rounded-[4px] border border-[#D4AF37]/20 bg-[#232a34] p-3 text-[#d0c5af] transition hover:border-[#D4AF37]/40 hover:text-[#D4AF37]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
+
+        {/* AI Suggestions Box */}
+        {suggestions.length > 0 && (
+          <div className="mt-6 space-y-3 rounded-[8px] border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-[#D4AF37]">AI Suggestions</h3>
+              <button onClick={() => setSuggestions([])} className="text-xs text-[#99907c] hover:text-white">Clear</button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="rounded-[4px] border border-[#D4AF37]/20 bg-[#232a34] p-3 text-left transition hover:border-[#D4AF37]/50"
+                >
+                  <p className="font-semibold text-[#dce3f0]">{s.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-[#99907c]">{s.description}</p>
+                  <span className="mt-2 inline-block rounded-[2px] bg-[#192029] px-2 py-1 text-[10px] uppercase text-[#D4AF37]">
+                    {s.priority}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Body grid */}
         <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -192,6 +260,13 @@ export function ActionForgeModal({
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
+                  </Field>
+
+                  <Field label="Tags" helper="Comma separated (e.g. travel, dinner)">
+                    <input value={form.tags}
+                      onChange={(e) => update("tags", e.target.value)}
+                      placeholder="uber, late-night"
+                      className={inputClass} />
                   </Field>
 
                   {/* Split Bill */}

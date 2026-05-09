@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis
 } from "recharts";
 import { HeatmapGrid, MonthlyHeatmap } from "../components/heatmaps";
+import { StaggeredList, StaggeredItem } from "../components/shared";
 import type { HeatmapCell } from "../types";
 
 export function AnalyticsHub({
@@ -36,8 +37,9 @@ export function AnalyticsHub({
         </div>
 
         {/* XP Heatmap + Trend chart row */}
-        <div className="grid gap-6 2xl:grid-cols-[1.15fr_0.95fr]">
-          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
+        <StaggeredList className="grid gap-6 2xl:grid-cols-[1.15fr_0.95fr]">
+          <StaggeredItem>
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6 h-full">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">XP Matrix</p>
@@ -77,12 +79,14 @@ export function AnalyticsHub({
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        </div>
+            </div>
+          </StaggeredItem>
+        </StaggeredList>
 
         {/* Inflow / Outflow / Earn-vs-Spend row */}
-        <div className="grid gap-6 2xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
-          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
+        <StaggeredList className="grid gap-6 2xl:grid-cols-[1.15fr_1.15fr_0.9fr]">
+          <StaggeredItem>
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6 h-full">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Financial Heatmap</p>
@@ -93,9 +97,11 @@ export function AnalyticsHub({
             <div className="mt-6">
               <MonthlyHeatmap data={inflowHeatmap} variant="inflow" />
             </div>
-          </div>
+            </div>
+          </StaggeredItem>
 
-          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
+          <StaggeredItem>
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6 h-full">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Financial Heatmap</p>
@@ -106,9 +112,11 @@ export function AnalyticsHub({
             <div className="mt-6">
               <MonthlyHeatmap data={outflowHeatmap} variant="outflow" />
             </div>
-          </div>
+            </div>
+          </StaggeredItem>
 
-          <div className="glass-panel rounded-[8px] p-5 sm:p-6">
+          <StaggeredItem>
+            <div className="glass-panel rounded-[8px] p-5 sm:p-6 h-full">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Cash Flow</p>
@@ -129,8 +137,9 @@ export function AnalyticsHub({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        </div>
+            </div>
+          </StaggeredItem>
+        </StaggeredList>
       </div>
     </section>
   );

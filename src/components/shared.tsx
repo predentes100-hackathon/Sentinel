@@ -1,8 +1,55 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
+import { motion } from "framer-motion";
 import { getInitials } from "../data";
 import type { MemberProfile, SortDirection, SyncState } from "../types";
+
+export function PageTransition({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function StaggeredList({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: { staggerChildren: 0.05 }
+        }
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function StaggeredItem({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <motion.div
+      className={className}
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export function Avatar({ member, large }: { member: MemberProfile; large?: boolean }) {
   if (member.avatarUrl) {
@@ -76,7 +123,7 @@ export function MetricCard({
   tone
 }: {
   title: string;
-  value: string;
+  value: ReactNode;
   sublabel: string;
   icon: LucideIcon;
   tone: "gold" | "amber" | "emerald" | "cyan" | "fuchsia";
@@ -94,11 +141,11 @@ export function MetricCard({
   const Icon = icon;
 
   return (
-    <div className="glass-panel rounded-[8px] p-4">
+    <div className="glass-panel rounded-[8px] p-4 transition hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">{title}</p>
-          <p className="mt-3 text-2xl font-semibold text-[#dce3f0]">{value}</p>
+          <p className="serif mt-3 text-3xl font-semibold text-[#dce3f0]">{value}</p>
           <p className="mt-2 text-sm text-[#99907c]">{sublabel}</p>
         </div>
         <span className={`rounded-[4px] border p-3 ${toneClass}`}>
@@ -117,18 +164,18 @@ export function WealthStat({
   negative
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   delta: string;
   icon: LucideIcon;
   negative?: boolean;
 }) {
   const Icon = icon;
   return (
-    <div className="rounded-[4px] border border-[#D4AF37]/12 bg-[#192029] px-4 py-4">
+    <div className="rounded-[4px] border border-[#D4AF37]/12 bg-[#192029] px-4 py-4 transition hover:-translate-y-0.5">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">{label}</p>
-          <p className={`mt-2 text-2xl font-semibold ${negative ? "text-[#c0392b]/80" : "text-[#D4AF37]"}`}>
+          <p className={`serif mt-2 text-3xl font-semibold ${negative ? "text-[#c0392b]/80" : "text-[#D4AF37]"}`}>
             {value}
           </p>
         </div>
