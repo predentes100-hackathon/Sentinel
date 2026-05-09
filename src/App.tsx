@@ -418,9 +418,17 @@ export default function App() {
       return;
     }
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data, error }) => {
       if (isActive) {
-        store.setSession(data.session ?? null);
+        if (error) {
+          console.error("Supabase auth error:", error);
+        }
+        store.setSession(data?.session ?? null);
+        setSessionLoaded(true);
+      }
+    }).catch((err) => {
+      if (isActive) {
+        console.error("Failed to load session:", err);
         setSessionLoaded(true);
       }
     });
