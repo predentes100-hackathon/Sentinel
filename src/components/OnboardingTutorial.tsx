@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, X } from "lucide-react";
+import { useAppStore } from "../store";
 
 const STEPS = [
   {
@@ -39,13 +40,14 @@ const STORAGE_KEY = "sentinel-onboarding-done";
 
 export function OnboardingTutorial() {
   const [step, setStep] = useState(0);
-  const [done, setDone] = useState(() => localStorage.getItem(STORAGE_KEY) === "true");
+  const store = useAppStore();
 
-  if (done) return null;
+  if (!store.onboardingVisible) return null;
 
   function finish() {
     localStorage.setItem(STORAGE_KEY, "true");
-    setDone(true);
+    store.setOnboardingVisible(false);
+    setStep(0);
   }
 
   const current = STEPS[step];
@@ -58,8 +60,8 @@ export function OnboardingTutorial() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0d141d]/75 backdrop-blur-sm p-4"
-        onClick={finish}
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-[#0d141d]/80 backdrop-blur-sm p-4"
+        onClick={() => {}} // Remove backdrop dismissal to prevent accidental skips
       >
         <motion.div
           key={step}

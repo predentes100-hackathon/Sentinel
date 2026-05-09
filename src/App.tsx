@@ -1,4 +1,4 @@
-import { Suspense, lazy, startTransition, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
+import { Suspense, lazy, startTransition, useEffect, useRef, useState, Component, ErrorInfo, ReactNode } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Check, Database, LogIn, LogOut, Menu, Plus, RefreshCcw, Target, Users, X as XIcon } from "lucide-react";
 
@@ -15,6 +15,7 @@ import { AIProfileForm } from "./components/AIProfileForm";
 import { supabase } from "./lib/supabase";
 import { LevelUpBanner } from "./components/LevelUpBanner";
 import { OnboardingTutorial } from "./components/OnboardingTutorial";
+import { AuthView } from "./components/AuthView";
 
 const CommandCenter = lazy(() => import("./views/CommandCenter").then(m => ({ default: m.CommandCenter })));
 const WealthLedger = lazy(() => import("./views/WealthLedger").then(m => ({ default: m.WealthLedger })));
@@ -311,6 +312,22 @@ function MainAppLayout() {
                 {isSaving ? "Resetting..." : "Reset workspace"}
               </button>
             </div>
+
+            <div className="glass-panel rounded-[8px] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.28em] text-[#99907c]">Guided Tour</p>
+                </div>
+                <Target className="mt-0.5 h-5 w-5 text-[#99907c]" />
+              </div>
+              <button
+                type="button"
+                onClick={() => store.setOnboardingVisible(true)}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-3 text-sm font-medium text-[#dce3f0] transition hover:border-[#D4AF37]/35 hover:bg-[#D4AF37]/12 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/50"
+              >
+                Replay Tutorial
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -392,6 +409,40 @@ function MainAppLayout() {
 
 export default function App() {
   const store = useAppStore();
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+    if (!supabase) {
+      setSessionLoaded(true);
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (isActive) {
+        store.setSession(data.session ?? null);
+        setSessionLoaded(true);
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isActive) {
+        store.setSession(session);
+      }
+    });
+    return () => {
+      isActive = false;
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (!sessionLoaded) {
+    return <div className="min-h-screen bg-[#0d141d]" />;
+  }
+
+  if (!store.session) {
+    return <AuthView />;
+  }
+
   if (!store.hasEntered) {
     return <MotionLanding onEnter={() => store.setHasEntered(true)} />;
   }

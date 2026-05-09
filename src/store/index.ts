@@ -69,6 +69,9 @@ interface AppState {
 
   levelUpShown: number;
   setLevelUpShown: (level: number) => void;
+
+  onboardingVisible: boolean;
+  setOnboardingVisible: (visible: boolean) => void;
 }
 
 const cached = loadCachedState();
@@ -157,4 +160,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   levelUpShown: 0,
   setLevelUpShown: (levelUpShown) => set({ levelUpShown }),
+
+  onboardingVisible: localStorage.getItem('sentinel-onboarding-done') !== 'true',
+  setOnboardingVisible: (onboardingVisible) => set({ onboardingVisible }),
 }));
