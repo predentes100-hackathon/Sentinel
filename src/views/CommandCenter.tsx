@@ -8,6 +8,7 @@ import {
   Flame,
   IndianRupee,
   LineChart,
+  Plus,
   Target,
   Shield,
   Swords,
@@ -20,6 +21,10 @@ import { Avatar, MetricCard, WealthStat, StaggeredList, StaggeredItem } from "..
 import { EmptyState } from "../components/EmptyState";
 import { AnimatedNumber } from "../components/AnimatedNumber";
 import type { HabitItem, MemberProfile, SubscriptionItem, TaskItem } from "../types";
+import { PomodoroTimer } from "../components/PomodoroTimer";
+import { AddHabitForm } from "../components/AddHabitForm";
+import { AIDailyBrief } from "../components/AIDailyBrief";
+import { useState } from "react";
 
 export function CommandCenter({
   member,
@@ -29,7 +34,9 @@ export function CommandCenter({
   completionRate,
   habitBurstId,
   onCompleteTask,
-  onCompleteHabit
+  onCompleteHabit,
+  onAddHabit,
+  aiProfile
 }: {
   member: MemberProfile;
   tasks: TaskItem[];
@@ -39,9 +46,14 @@ export function CommandCenter({
   habitBurstId: string | null;
   onCompleteTask: (taskId: string) => void;
   onCompleteHabit: (habitId: string) => void;
+  onAddHabit: (title: string, emoji: string) => void;
+  aiProfile?: { age: string; profession: string; goals: string } | null;
 }) {
+  const [pomodoroTask, setPomodoroTask] = useState<string | undefined>(undefined);
+  const [showAddHabit, setShowAddHabit] = useState(false);
   return (
     <section className="glass-panel min-h-[calc(100vh-2rem)] rounded-[8px] p-4 sm:p-6">
+      {aiProfile && <AIDailyBrief profile={aiProfile} />}
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
         <div className="space-y-6">
           <div className="grid gap-4 xl:grid-cols-[1.25fr_0.9fr]">
@@ -148,6 +160,7 @@ export function CommandCenter({
                 <StaggeredList className="grid gap-4">
                   {tasks.map((task) => {
                     const meta = PRIORITY_META[task.priority];
+                    const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date(new Date().toDateString());
                     return (
                       <StaggeredItem key={task.id}>
                         <article
@@ -175,9 +188,15 @@ export function CommandCenter({
                             <span className="inline-flex items-center rounded-[2px] border border-[#4d4635] bg-[#080f17] px-3 py-1 text-xs text-[#d0c5af]">
                               +{task.xpValue} XP
                             </span>
-                            <span className="text-xs uppercase tracking-[0.28em] text-[#99907c]">
-                              {task.dueLabel}
-                            </span>
+                            {isOverdue ? (
+                              <span className="inline-flex items-center rounded-[2px] border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-500">
+                                Overdue
+                              </span>
+                            ) : (
+                              <span className="text-xs uppercase tracking-[0.28em] text-[#99907c]">
+                                {task.dueLabel}
+                              </span>
+                            )}
                           </div>
                           <h4 className="mt-4 text-lg font-semibold text-[#dce3f0]">{task.title}</h4>
                           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d0c5af]">{task.description}</p>
@@ -201,6 +220,18 @@ export function CommandCenter({
                           <Check className="h-4 w-4" />
                           {task.completed ? "Completed" : "Mark done"}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setPomodoroTask(pomodoroTask === task.title ? undefined : task.title)}
+                          className={`inline-flex items-center gap-2 rounded-[4px] border px-3 py-3 text-sm transition ${
+                            pomodoroTask === task.title
+                              ? "border-[#D4AF37]/40 bg-[#D4AF37]/15 text-[#D4AF37]"
+                              : "border-[#D4AF37]/10 bg-[#192029] text-[#99907c] hover:text-[#D4AF37]"
+                          }`}
+                          title="Focus with Pomodoro"
+                        >
+                          ⏱
+                        </button>
                       </div>
                         </article>
                       </StaggeredItem>
@@ -213,7 +244,8 @@ export function CommandCenter({
         </div>
 
         <div className="space-y-6">
-          {/* Telemetry cards */}
+          {/* Pomodoro Timer */}
+          <PomodoroTimer taskTitle={pomodoroTask} />
           <div className="glass-panel rounded-[8px] p-5 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -304,9 +336,12 @@ export function CommandCenter({
             <p className="text-xs uppercase tracking-[0.32em] text-[#d0c5af]">Habit Streak</p>
             <h3 className="serif mt-2 text-xl font-semibold text-[#dce3f0]">Daily routines with XP feedback</h3>
           </div>
-          <div className="rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-[#d0c5af]">
-            Tap to complete
-          </div>
+          <button
+            onClick={() => setShowAddHabit(true)}
+            className="inline-flex items-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/5 px-3 py-2 text-xs uppercase tracking-[0.28em] text-[#D4AF37] transition hover:bg-[#D4AF37]/15"
+          >
+            <Plus className="h-3 w-3" /> Add Habit
+          </button>
         </div>
 
         <div className="mt-6 flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
@@ -413,6 +448,12 @@ export function CommandCenter({
           })}
         </div>
       </div>
+      {showAddHabit && (
+        <AddHabitForm
+          onAdd={(title, emoji) => { onAddHabit(title, emoji); setShowAddHabit(false); }}
+          onClose={() => setShowAddHabit(false)}
+        />
+      )}
     </section>
   );
 }

@@ -63,6 +63,12 @@ interface AppState {
   actionForm: ActionFormState;
   setActionForm: (form: ActionFormState | ((curr: ActionFormState) => ActionFormState)) => void;
   resetActionForm: () => void;
+
+  sidebarOpen: boolean;
+  setSidebarOpen: (val: boolean) => void;
+
+  levelUpShown: number;
+  setLevelUpShown: (level: number) => void;
 }
 
 const cached = loadCachedState();
@@ -145,4 +151,10 @@ export const useAppStore = create<AppState>((set) => ({
   actionForm: buildInitialActionForm(),
   setActionForm: (actionForm) => set((state) => ({ actionForm: typeof actionForm === 'function' ? actionForm(state.actionForm) : actionForm })),
   resetActionForm: () => set({ actionForm: buildInitialActionForm() }),
+
+  sidebarOpen: false,
+  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+
+  levelUpShown: 0,
+  setLevelUpShown: (levelUpShown) => set({ levelUpShown }),
 }));

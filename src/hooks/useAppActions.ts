@@ -58,7 +58,8 @@ export function useAppActions() {
       xp_goal: nextMember.xpGoal,
       total_balance: nextMember.totalBalance,
       monthly_spend: nextMember.monthlySpend,
-      monthly_earned: nextMember.monthlyEarned
+      monthly_earned: nextMember.monthlyEarned,
+      budget_limits: nextMember.budgetLimits
     });
   }
 
@@ -123,6 +124,7 @@ export function useAppActions() {
     const { error } = await supabase.from("tasks").upsert({
       ...basePayload,
       recurrence_type: task.recurrenceType,
+      due_date: task.dueDate,
       scheduled_time: task.scheduledTime,
       last_completed_on: task.lastCompletedOn
     });
@@ -244,10 +246,11 @@ export function useAppActions() {
       title: actionForm.title.trim(),
       description: actionForm.description.trim() || "Freshly forged action ready for execution.",
       priority: actionForm.priority,
-      xpValue: actionForm.priority === "Low" ? 10 : actionForm.priority === "Medium" ? 20 : actionForm.priority === "High" ? 30 : 50,
-      dueLabel: actionForm.repeatsDaily ? "Daily" : `Created | ${new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}`,
+      xpValue: actionForm.priority === "Deep Work" ? 50 : actionForm.priority === "High" ? 30 : actionForm.priority === "Medium" ? 20 : 10,
+      dueLabel: actionForm.dueDate ? actionForm.dueDate : (actionForm.repeatsDaily ? "Daily" : "Today"),
       completed: false,
       recurrenceType: actionForm.repeatsDaily ? "daily" : "once",
+      dueDate: actionForm.dueDate || null,
       scheduledTime: actionForm.repeatsDaily ? actionForm.dailyTime : null,
       lastCompletedOn: null
     };
@@ -335,12 +338,27 @@ export function useAppActions() {
     store.pushToast("Signed out. Demo cache is still available locally.");
   }
 
+  function handleAddHabit(title: string, emoji: string) {
+    const newHabit: HabitItem = {
+      id: crypto.randomUUID(),
+      title,
+      iconKey: "surya", // fallback icon key (emoji takes priority in display)
+      xpValue: 15,
+      completed: false,
+      streakCount: 0,
+      ...(emoji ? { emoji } : {})
+    } as HabitItem & { emoji?: string };
+    store.setHabits((curr) => [...curr, newHabit]);
+    store.pushToast(`Habit "${title}" added! +15 XP per completion.`);
+  }
+
   return {
     awardXp,
     updateBalances,
     handleResetWorkspace,
     handleCompleteTask,
     handleCompleteHabit,
+    handleAddHabit,
     commitAction,
     handleGoogleAuth,
     handleSignOut,
@@ -365,11 +383,12 @@ export async function loadDashboardFromSupabase(user: import("@supabase/supabase
     }
 
     const remoteProfile = profileResponse.data;
-    const remoteTasks = (taskResponse.data || []).map((row: any) => ({
-      id: row.id, title: row.title, description: row.description, priority: row.priority,
-      xpValue: row.xp_value, dueLabel: row.due_label, completed: row.completed,
-      recurrenceType: row.recurrence_type ?? "once", scheduledTime: row.scheduled_time ?? null,
-      lastCompletedOn: row.last_completed_on ?? null
+    const remoteTasks = (taskResponse.data || []).map((t: any) => ({
+      id: t.id, title: t.title, description: t.description, priority: t.priority,
+      xpValue: t.xp_value, dueLabel: t.due_label, completed: t.completed,
+      recurrenceType: t.recurrence_type ?? "once", dueDate: t.due_date,
+      scheduledTime: t.scheduled_time ?? null,
+      lastCompletedOn: t.last_completed_on ?? null
     }));
     const remoteHabits = (habitResponse.data || []).map((row: any) => ({
       id: row.id, title: row.title, iconKey: row.icon_key, xpValue: row.xp_value, completed: row.completed, streakCount: row.streak_count ?? 0
@@ -459,6 +478,7 @@ function buildPristineMember(displayName: string, avatarUrl: string | null): Mem
     xpGoal: 100,
     totalBalance: 0,
     monthlySpend: 0,
-    monthlyEarned: 0
+    monthlyEarned: 0,
+    budgetLimits: {}
   };
 }

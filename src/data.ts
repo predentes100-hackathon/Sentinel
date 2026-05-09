@@ -215,7 +215,11 @@ export const DEFAULT_MEMBER: MemberProfile = {
   xpGoal: 500,
   totalBalance: 128640,
   monthlySpend: 14250,
-  monthlyEarned: 26800
+  monthlyEarned: 26800,
+  budgetLimits: {
+    "Dining out & takeaway": 3000,
+    "Entertainment": 2000
+  }
 };
 
 export const DEFAULT_TASKS: TaskItem[] = [
@@ -228,6 +232,7 @@ export const DEFAULT_TASKS: TaskItem[] = [
     dueLabel: "Today | 8:00 PM",
     completed: false,
     recurrenceType: "once",
+    dueDate: null,
     scheduledTime: null,
     lastCompletedOn: null
   },
@@ -240,6 +245,7 @@ export const DEFAULT_TASKS: TaskItem[] = [
     dueLabel: "Today | 5:30 PM",
     completed: false,
     recurrenceType: "once",
+    dueDate: null,
     scheduledTime: null,
     lastCompletedOn: null
   },
@@ -252,6 +258,7 @@ export const DEFAULT_TASKS: TaskItem[] = [
     dueLabel: "Today | 3:15 PM",
     completed: false,
     recurrenceType: "once",
+    dueDate: null,
     scheduledTime: null,
     lastCompletedOn: null
   },
@@ -264,6 +271,7 @@ export const DEFAULT_TASKS: TaskItem[] = [
     dueLabel: "Today | 10:30 PM",
     completed: false,
     recurrenceType: "once",
+    dueDate: null,
     scheduledTime: null,
     lastCompletedOn: null
   }
@@ -410,7 +418,8 @@ export function buildInitialActionForm(): ActionFormState {
     subscriptionFrequency: "Monthly",
     nextDueAt: toLocalDateTimeInput(offsetDateTime(7, 9)),
     reminderHours: 24,
-    tags: ""
+    tags: "",
+    dueDate: ""
   };
 }
 

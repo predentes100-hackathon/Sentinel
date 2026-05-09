@@ -1,6 +1,6 @@
-import { Suspense, lazy, startTransition, useEffect, Component, ErrorInfo, ReactNode } from "react";
+import { Suspense, lazy, startTransition, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { Check, Database, LogIn, LogOut, Plus, RefreshCcw, Target, Users } from "lucide-react";
+import { Check, Database, LogIn, LogOut, Menu, Plus, RefreshCcw, Target, Users, X as XIcon } from "lucide-react";
 
 import { useAppStore } from "./store";
 import { useAppActions, loadDashboardFromSupabase } from "./hooks/useAppActions";
@@ -13,6 +13,8 @@ import { MotionLanding } from "./components/MotionLanding";
 import { DisclaimerView } from "./components/DisclaimerView";
 import { AIProfileForm } from "./components/AIProfileForm";
 import { supabase } from "./lib/supabase";
+import { LevelUpBanner } from "./components/LevelUpBanner";
+import { OnboardingTutorial } from "./components/OnboardingTutorial";
 
 const CommandCenter = lazy(() => import("./views/CommandCenter").then(m => ({ default: m.CommandCenter })));
 const WealthLedger = lazy(() => import("./views/WealthLedger").then(m => ({ default: m.WealthLedger })));
@@ -52,7 +54,19 @@ function MainAppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { member, tasks, habits, transactions, subscriptions, session, syncState, isModalOpen, toasts, habitBurstId, exportOpen, sortKey, sortDirection, isSaving, actionForm } = store;
+  const { member, tasks, habits, transactions, subscriptions, session, syncState, isModalOpen, toasts, habitBurstId, exportOpen, sortKey, sortDirection, isSaving, actionForm, sidebarOpen, levelUpShown } = store;
+
+  const prevLevel = useRef(member.level);
+
+  // Level-up detection
+  useEffect(() => {
+    if (member.level > prevLevel.current && member.level > levelUpShown) {
+      store.setLevelUpShown(member.level);
+    }
+    prevLevel.current = member.level;
+  }, [member.level]);
+
+  const showLevelUp = member.level > 0 && member.level === levelUpShown && levelUpShown > (parseInt(localStorage.getItem('sentinel-last-level') || '0'));
 
   useEffect(() => {
     const client = supabase;
@@ -175,8 +189,27 @@ function MainAppLayout() {
       <div className="orb left-[-160px] top-[100px] h-96 w-96 bg-[#D4AF37]/30" />
       <div className="orb bottom-[-120px] right-[8%] h-80 w-80 bg-[#D4AF37]/15" />
 
+      {/* Mobile hamburger */}
+      <button
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-[4px] border border-[#D4AF37]/20 bg-[#192029] text-[#D4AF37] lg:hidden"
+        onClick={() => store.setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle sidebar"
+      >
+        {sidebarOpen ? <XIcon className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-[#0d141d]/70 backdrop-blur-sm lg:hidden"
+          onClick={() => store.setSidebarOpen(false)}
+        />
+      )}
+
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1800px] flex-col gap-4 lg:flex-row">
-        <aside className="glass-panel relative flex w-full shrink-0 flex-col overflow-hidden rounded-[8px] p-4 lg:w-[300px]">
+        <aside className={`glass-panel fixed top-0 left-0 z-40 flex h-full w-[300px] shrink-0 flex-col overflow-y-auto overflow-hidden rounded-[8px] p-4 transition-transform duration-300 lg:static lg:translate-x-0 lg:h-auto ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
           <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -213,6 +246,7 @@ function MainAppLayout() {
                   key={view.key}
                   to={`/${view.key}`}
                   aria-current={active ? "page" : undefined}
+                  onClick={() => store.setSidebarOpen(false)}
                   className={`relative flex w-full items-center justify-between rounded-[4px] border px-4 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/50 ${
                     active
                       ? "border-[#D4AF37]/30 bg-[#D4AF37]/8 text-[#dce3f0] nav-gold-glow"
@@ -294,9 +328,9 @@ function MainAppLayout() {
               ) : (
                 <AnimatePresence mode="wait">
                   <Routes location={location} key={location.pathname}>
-                    <Route path="/command" element={<PageTransition><CommandCenter member={member} tasks={displayTasks} habits={habits} subscriptions={subscriptions} completionRate={completionRate} habitBurstId={habitBurstId} onCompleteTask={actions.handleCompleteTask} onCompleteHabit={actions.handleCompleteHabit} /></PageTransition>} />
+                    <Route path="/command" element={<PageTransition><CommandCenter member={member} tasks={displayTasks} habits={habits} subscriptions={subscriptions} completionRate={completionRate} habitBurstId={habitBurstId} onCompleteTask={actions.handleCompleteTask} onCompleteHabit={actions.handleCompleteHabit} onAddHabit={actions.handleAddHabit} aiProfile={store.aiProfile} /></PageTransition>} />
                     <Route path="/wealth" element={<PageTransition><WealthLedger member={member} burnRate={burnRate} forecastedBurnRate={forecastedBurnRate} totalOwedToMe={totalOwedToMe} transactions={sortedTransactions} exportOpen={exportOpen} sortKey={sortKey} sortDirection={sortDirection} onToggleExport={() => store.setExportOpen(!exportOpen)} onSort={(k) => store.sortKey === k ? store.setSortDirection(store.sortDirection === "asc" ? "desc" : "asc") : (store.setSortKey(k), store.setSortDirection("desc"))} onExport={exportLedger} /></PageTransition>} />
-                    <Route path="/analytics" element={<PageTransition><AnalyticsHub xpHeatmap={xpHeatmap} inflowHeatmap={monthlyInflowHeatmap} outflowHeatmap={monthlyOutflowHeatmap} trendSeries={trendSeries} comparisonSeries={comparisonSeries} /></PageTransition>} />
+                    <Route path="/analytics" element={<PageTransition><AnalyticsHub xpHeatmap={xpHeatmap} inflowHeatmap={monthlyInflowHeatmap} outflowHeatmap={monthlyOutflowHeatmap} trendSeries={trendSeries} comparisonSeries={comparisonSeries} transactions={transactions} member={member} /></PageTransition>} />
                     <Route path="*" element={<Navigate to="/command" replace />} />
                   </Routes>
                 </AnimatePresence>
@@ -339,6 +373,19 @@ function MainAppLayout() {
           </div>
         ))}
       </div>
+
+      {/* Level-Up Banner */}
+      {showLevelUp && (
+        <LevelUpBanner
+          level={member.level}
+          onClose={() => {
+            localStorage.setItem('sentinel-last-level', String(member.level));
+            store.setLevelUpShown(0);
+          }}
+        />
+      )}
+
+      <OnboardingTutorial />
     </div>
   );
 }

@@ -84,3 +84,59 @@ Example:
     throw new Error("AI returned an unexpected format. Please try again.");
   }
 }
+
+export type ParsedTask = {
+  title: string;
+  description: string;
+  priority: Priority;
+  amount?: string;
+  transactionType?: "Spend" | "Earn";
+  dueLabel?: string;
+};
+
+export async function parseNaturalLanguageTask(input: string): Promise<ParsedTask> {
+  if (!groqKey) throw new Error("Groq API key not configured.");
+
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: `You parse natural language into structured task data. Today is ${today}. Respond ONLY with a single JSON object.`
+        },
+        {
+          role: "user",
+          content: `Parse this into a task: "${input}"
+
+Return a JSON object with:
+- "title": concise task title
+- "description": brief expansion of what the task involves
+- "priority": one of "Low", "Medium", "High", "Deep Work"
+- "dueLabel": due date label if mentioned (e.g. "Tomorrow", "Friday", "May 15") or ""
+- "amount": numeric string if money mentioned (e.g. "500") or ""
+- "transactionType": "Spend" or "Earn" if money involved, else ""
+
+Example for "Buy groceries ₹800 tomorrow":
+{"title":"Buy groceries","description":"Pick up weekly grocery supplies.","priority":"Medium","dueLabel":"Tomorrow","amount":"800","transactionType":"Spend"}`
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 512,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as any)?.error?.message || `Groq API error ${response.status}`);
+  }
+
+  const data = await response.json();
+  const rawText: string = (data as any)?.choices?.[0]?.message?.content ?? "";
+  return JSON.parse(rawText) as ParsedTask;
+}

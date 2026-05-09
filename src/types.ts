@@ -17,6 +17,7 @@ export type MemberProfile = {
   totalBalance: number;
   monthlySpend: number;
   monthlyEarned: number;
+  budgetLimits: Record<string, number>;
 };
 
 export type TaskItem = {
@@ -28,6 +29,7 @@ export type TaskItem = {
   dueLabel: string;
   completed: boolean;
   recurrenceType: "once" | "daily";
+  dueDate: string | null;
   scheduledTime: string | null;
   lastCompletedOn: string | null;
 };
@@ -131,6 +133,7 @@ export type ActionFormState = {
   nextDueAt: string;
   reminderHours: number;
   tags: string;
+  dueDate: string;
 };
 
 export type Achievement = {

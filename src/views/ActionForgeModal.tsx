@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Plus, X, Sparkles, Loader2 } from "lucide-react";
+import { Plus, X, Sparkles, Loader2, Wand2 } from "lucide-react";
 import { FINANCE_CATEGORIES, PRIORITY_META, formatCurrency } from "../data";
 import { Field, Toggle } from "../components/shared";
 import { useAppStore } from "../store";
-import { generateActionSuggestions, type AISuggestion } from "../lib/gemini";
+import { generateActionSuggestions, parseNaturalLanguageTask, type AISuggestion } from "../lib/gemini";
 import type { ActionFormState, FinanceCategory, SubscriptionItem, TransactionType } from "../types";
 
 export function ActionForgeModal({
@@ -19,6 +19,8 @@ export function ActionForgeModal({
   const store = useAppStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [nlpInput, setNlpInput] = useState("");
+  const [isParsingNlp, setIsParsingNlp] = useState(false);
 
   function update<K extends keyof ActionFormState>(key: K, value: ActionFormState[K]) {
     onFormChange((current) => ({ ...current, [key]: value }));
@@ -66,6 +68,27 @@ export function ActionForgeModal({
     setSuggestions([]);
   }
 
+  async function handleNlpParse() {
+    if (!nlpInput.trim()) return;
+    setIsParsingNlp(true);
+    try {
+      const parsed = await parseNaturalLanguageTask(nlpInput);
+      onFormChange((current) => ({
+        ...current,
+        title: parsed.title || current.title,
+        description: parsed.description || current.description,
+        priority: parsed.priority || current.priority,
+        ...(parsed.amount ? { amount: parsed.amount, involvesTransaction: true } : {}),
+        ...(parsed.transactionType ? { transactionType: parsed.transactionType } : {})
+      }));
+      setNlpInput("");
+    } catch (err: any) {
+      alert("NLP parse failed: " + err.message);
+    } finally {
+      setIsParsingNlp(false);
+    }
+  }
+
   const inputClass = "w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-4 text-[#dce3f0] outline-none transition placeholder:text-[#99907c] focus:border-[#D4AF37]/50 focus:ring-0";
   const selectClass = "w-full rounded-[4px] border border-[#D4AF37]/15 bg-[#232a34] px-4 py-3 text-[#dce3f0] outline-none focus:border-[#D4AF37]/50";
 
@@ -86,6 +109,27 @@ export function ActionForgeModal({
             <p className="mt-2 text-sm text-[#99907c]">
               Title it, gamify it, wire the money flow, and optionally attach a subscription reminder.
             </p>
+
+            {/* Natural Language Input */}
+            <div className="mt-4 flex gap-2">
+              <input
+                type="text"
+                value={nlpInput}
+                onChange={(e) => setNlpInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleNlpParse()}
+                placeholder='Type naturally: "Review budget ₹500 spend tomorrow"'
+                className="flex-1 rounded-[4px] border border-[#D4AF37]/20 bg-[#232a34] px-4 py-2.5 text-sm text-[#dce3f0] outline-none placeholder:text-[#99907c]/60 focus:border-[#D4AF37]/50"
+              />
+              <button
+                type="button"
+                onClick={handleNlpParse}
+                disabled={isParsingNlp || !nlpInput.trim()}
+                className="inline-flex items-center gap-2 rounded-[4px] border border-[#D4AF37]/20 bg-[#D4AF37]/10 px-3 py-2 text-sm font-medium text-[#D4AF37] transition hover:bg-[#D4AF37]/20 disabled:opacity-50"
+              >
+                {isParsingNlp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                {isParsingNlp ? "Parsing..." : "Parse"}
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -215,9 +259,16 @@ export function ActionForgeModal({
                   </Field>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-[#99907c]">
-                  Leave this off for one-time tasks that disappear after completion.
-                </p>
+                <div className="mt-5">
+                  <Field label="Due date (optional)">
+                    <input type="date" value={form.dueDate}
+                      onChange={(e) => update("dueDate", e.target.value)}
+                      className={selectClass} />
+                  </Field>
+                  <p className="mt-3 text-sm text-[#99907c]">
+                    Leave this off for one-time tasks that disappear after completion.
+                  </p>
+                </div>
               )}
             </div>
           </div>
